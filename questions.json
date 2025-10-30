@@ -1,0 +1,59 @@
+[
+  {
+    "prompt": "What are the 6 Red Hat Technical Decision Points",
+    "answers": [
+      { "text": "Automation", "points": 62 },
+      { "text": "Artificial Intelligence aka AI", "points": 11 },
+      { "text": "Container Management", "points": 3 },
+      { "text": "Application Platform", "points": 2 },
+      { "text": "Virtualization", "points": 1 },
+      { "text": "Server/Cloud OS", "points": 1 }
+    ]
+  },
+  {
+    "prompt": "What are the 4 dimensions of Adoption Maturity",
+    "answers": [
+      { "text": "Product Usage", "points": 39 },
+      { "text": "Performance", "points": 17 },
+      { "text": "Proficiency", "points": 4 },
+      { "text": "Perception", "points": 1 }
+    ]
+  },
+  {
+    "prompt": "Name the 3 different matrices per TDP",
+    "answers": [
+      { "text": "Assess", "points": 69 },
+      { "text": "Measure", "points": 13 },
+      { "text": "Advance", "points": 3 }
+    ]
+  },
+  {
+    "prompt": "What are the 6 Adoption Maturity stages",
+    "answers": [
+      { "text": "No Entitlement", "points": 68 },
+      { "text": "Initial", "points": 11 },
+      { "text": "Developing", "points": 4 },
+      { "text": "Operational", "points": 4 },
+      { "text": "Optimizing", "points": 4 },
+      { "text": "Innovator", "points": 4 }
+    ]
+  },
+  {
+    "prompt": "Why is adoption led growth important to Red Hat",
+    "answers": [
+      { "text": "Drives greater ARR", "points": 59 },
+      { "text": "Higher customer retention", "points": 18 },
+      { "text": "More actionable feedback", "points": 11 },
+      { "text": "Higher market share", "points": 2 }
+    ]
+  },
+  {
+    "prompt": "What are indicators of a customer being assessed as Initial level of adoption maturity",
+    "answers": [
+      { "text": "Users are skeptical on the value of the solution", "points": 25 },
+      { "text": "Users have minimal knowledge or no training", "points": 14 },
+      { "text": "No KPIs or success metrics tied to the solution", "points": 13 },
+      { "text": "Limited usage", "points": 3 }
+    ]
+  }
+]
