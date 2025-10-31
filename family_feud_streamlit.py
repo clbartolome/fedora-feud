@@ -3,6 +3,8 @@ from typing import List, Dict, Optional
 import json
 import os
 import base64
+import time
+
 
 st.set_page_config(page_title="Fedora Feud", page_icon="❓", layout="wide")
 
@@ -96,6 +98,16 @@ CUSTOM_CSS = """
     color: white !important;
     font-weight: 600 !important;
   }
+
+	/* Auto-hide for strike overlay (2s) */
+	.ff-strike.auto-hide {
+		animation: strikeHide 4s forwards ease-in;
+	}
+	@keyframes strikeHide {
+		0%   { opacity: 1; visibility: visible; }
+		80%  { opacity: 0; }
+		100% { opacity: 0; visibility: hidden; }
+	}
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -157,6 +169,8 @@ defaults = {
     "assigned_map": {},
     "show_strike": False,
     "strike_nonce": 0,
+    "strike_ts": 0.0,
+    "strike_hide_at": 0.0,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -213,28 +227,41 @@ def assign_team(ans_idx: int, team_idx: Optional[int]):
     pts = int(q["answers"][ans_idx]["points"])
     prev = st.session_state.assigned_map[i][ans_idx]
 
-    # quitar puntos previos si los había
     if prev is not None:
         st.session_state.team_scores[prev] = max(0, st.session_state.team_scores[prev] - pts)
 
-    # asignar nuevo equipo (si no es None)
     st.session_state.assigned_map[i][ans_idx] = team_idx
     if team_idx is not None:
         st.session_state.team_scores[team_idx] += pts
 
-    # revelar la respuesta
     st.session_state.revealed_map[i][ans_idx] = True
 
 def reveal_only(ans_idx: int):
     i = st.session_state.q_index
     ensure_state_for_question(i)
+    q = load_question(i)
+    pts = int(q["answers"][ans_idx]["points"])
+
+    prev_team = st.session_state.assigned_map[i][ans_idx]
+    if prev_team is not None:
+        st.session_state.team_scores[prev_team] = max(
+            0, st.session_state.team_scores[prev_team] - pts
+        )
+        st.session_state.assigned_map[i][ans_idx] = None
+
     st.session_state.revealed_map[i][ans_idx] = True
-    # si estaba asignada, NO tocamos puntos; solo revelar
+
 
 def toggle_strike():
     st.session_state.show_strike = not st.session_state.show_strike
     if st.session_state.show_strike:
         st.session_state.strike_nonce += 1
+
+def trigger_strike():
+    st.session_state.show_strike = True
+    st.session_state.strike_nonce = st.session_state.get("strike_nonce", 0) + 1
+    st.session_state.strike_hide_at = time.time() + 2.0   # duración visible (segundos)
+
 
 # ---------------------------
 # Home (team count)
@@ -300,8 +327,10 @@ with head_right:
 
 st.divider()
 
-# Strike
-st.button("❌", use_container_width=False, on_click=toggle_strike)
+# Strike 
+_empt, strike_col = st.columns([12, 1])
+with strike_col:
+    st.button("❌", use_container_width=True, on_click=trigger_strike)
 
 # Answers
 for i, a in enumerate(q['answers']):
@@ -319,11 +348,8 @@ for i, a in enumerate(q['answers']):
             )
 
     with right:
-        # ----- Dropdown estable por respuesta -----
-        dd_key = f"sel_{st.session_state.q_index}_{i}"  # clave por pregunta+respuesta
-        # sólo inicializamos la primera vez; luego no lo tocamos (evita “saltos”)
+        dd_key = f"sel_{st.session_state.q_index}_{i}" 
         if dd_key not in st.session_state:
-            # valor inicial según estado actual
             if assigned[i] is not None:
                 st.session_state[dd_key] = labels[assigned[i]]
             elif revealed[i]:
@@ -370,9 +396,17 @@ with nav3:
 with nav2:
     st.button("🏠 Home", on_click=go_home)
 
-# Strike overlay (only if active)
+# Strike overlay
 if st.session_state.show_strike:
     st.markdown(
         f"<div class='ff-strike' id='strike-{st.session_state.strike_nonce}'><div class='ff-x'>✕</div></div>",
         unsafe_allow_html=True
     )
+    remaining = st.session_state.strike_hide_at - time.time()
+    if remaining > 0:
+        time.sleep(remaining)
+    st.session_state.show_strike = False
+    try:
+        st.rerun()
+    except AttributeError:
+        st.experimental_rerun()
