@@ -136,6 +136,10 @@ oc new-app --image=quay.io/calopezb/fedora-feud:1.0 --name=fedora-feud
 
 # Expose the app
 oc expose svc fedora-feud --port 8501  
+
+# (Optional) Update Questions
+oc create cm --from-file=files/questions.json questions 
+oc set volume deploy fedora-feud --add --name questions --type configmap --configmap-name questions --mount-path /opt/app-root/src/files
 ```
 
 ---

@@ -141,7 +141,7 @@ def load_questions_from_file(path: str) -> List[Question]:
         for q in data:
             prompt = q.get("prompt")
             answers = q.get("answers", [])
-            if isinstance(prompt, str) and isinstance(answers, list) and 1 <= len(answers) <= 6:
+            if isinstance(prompt, str) and isinstance(answers, list) and 1 <= len(answers) <= 10:
                 cleaned.append({
                     "prompt": prompt,
                     "answers": [
@@ -153,7 +153,7 @@ def load_questions_from_file(path: str) -> List[Question]:
     except Exception:
         return DEFAULT_QUESTIONS
 
-QUESTIONS: List[Question] = load_questions_from_file("questions.json")
+QUESTIONS: List[Question] = load_questions_from_file("files/questions.json")
 HAS_LOGO = os.path.exists("fedora_feud.png")
 
 # ---------------------------------
@@ -190,7 +190,7 @@ def load_question(i: int) -> Question:
 
 def ensure_state_for_question(i: int):
     q = load_question(i)
-    n_answers = clamp(len(q["answers"]), 1, 6)
+    n_answers = clamp(len(q["answers"]), 1, 10)
     if i not in st.session_state.revealed_map:
         st.session_state.revealed_map[i] = [False] * n_answers
     if i not in st.session_state.assigned_map:
