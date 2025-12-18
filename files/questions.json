@@ -1,134 +1,180 @@
-[
-  {
-    "prompt": "In which cities has the Red Hat Summit previously been held? (65pts)",
-    "answers": [
-      { "text": "Boston, MA", "points": 5 },
-      { "text": "San Francisco, CA", "points": 5 },
-      { "text": "Denver, CO", "points": 5 },
-      { "text": "Chicago, IL", "points": 10 },
-      { "text": "San Diego, CA", "points": 10 },
-      { "text": "Nashville, TN", "points": 15 },
-      { "text": "New Orleans, LA", "points": 15 }
-    ]
-  },
-  {
-    "prompt": "Name the members of the C-suite at Red Hat: (65pts)",
-    "answers": [
-      { "text": "Matt Hicks - Chief Executive Officer", "points": 5 },
-      { "text": "Michael Ferris - Chief Strategy Officer", "points": 5 },
-      { "text": "Mario Vaz - Chief Financial Officer", "points": 10 },
-      { "text": "Andrew Brown - Chief Revenue Officer", "points": 5 },
-      { "text": "Chris Wright - Chief Technology Officer", "points": 10 },
-      { "text": "Leigh Day - Chief Marketing Officer", "points": 5 },
-      { "text": "Ashesh Badani - Chief Product Officer", "points": 10 },
-      { "text": "Marco Bill - Chief Information Officer", "points": 10 },
-      { "text": "Jenn Dudeck - Chief People Officer", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "What are the 6 Technical Decision Points? (40pts)",
-    "answers": [
-      { "text": "Server Cloud", "points": 10 },
-      { "text": "Container Management", "points": 5 },
-      { "text": "Virtualization", "points": 5 },
-      { "text": "App Platform", "points": 5 },
-      { "text": "Automation", "points": 5 },
-      { "text": "AI", "points": 10 }
-    ]
-  },
-  {
-    "prompt": "What are the 4 dimensions of Adoption Maturity? (20pts)",
-    "answers": [
-      { "text": "Proficiency", "points": 5 },
-      { "text": "Perception", "points": 5 },
-      { "text": "Product Usage", "points": 5 },
-      { "text": "Performance", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "Name the 3 matricies per TDP (15pts)",
-    "answers": [
-      { "text": "Assess", "points": 5 },
-      { "text": "Measure", "points": 5 },
-      { "text": "Advance", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "What are the 5 stages of a Matrix? (25pts)",
-    "answers": [
-      { "text": "Initial", "points": 5 },
-      { "text": "Developing", "points": 5 },
-      { "text": "Operational", "points": 5 },
-      { "text": "Optimizing", "points": 5 },
-      { "text": "Innovator ", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "The customer just advanced from level 2/Developer to level 3/Operational. What are the 4 actions we took that align to the 4 dimentions?",
-    "answers": [
-      { "text": "Increase feature adoption", "points": 5 },
-      { "text": "Automate deployments", "points": 5 },
-      { "text": "Improve KPIs", "points": 5 },
-      { "text": "Develop internal champions,Encourage internal advocacy", "points": 5 },
-      { "text": "Encourage peer training", "points": 5 },
-      { "text": "Track user sentiment", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "Your customer moved from level 2/Developing  to level 3/Operational . How did you MEASURE this?",
-    "answers": [
-      { "text": "% active users or teams", "points": 5 },
-      { "text": "% KPIs automatically tracked", "points": 5 },
-      { "text": "% users achieving high proficiency", "points": 5 },
-      { "text": "Net Promoter Score (NPS)", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "Your customer moved from level 1/Initial  to level 2/Developing. How did you ASSESS this?,Limited usage across teams with early-stage",
-    "answers": [
-      { "text": "implementation", "points": 5 },
-      { "text": "The customer initiatives define KPIs and value is seen", "points": 5 },
-      { "text": "Users can perform essential tasks", "points": 5 },
-      { "text": "Perception of value improving and concerns remain", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "Your customer moved from level 2/Developing  to level 3/Operational . How did you ADVANCE the customer to innovator?",
-    "answers": [
-      { "text": "Adopt latest releases, evaluate emerging capabilities", "points": 5 },
-      { "text": "Continuously optimize, contribute industry best practices", "points": 5 },
-      { "text": "Invest in advanced training, develop expert-level skills across teams", "points": 5 },
-      { "text": "Thought leadership, participate in industry events, open-source contributions", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "Name ways a customer's Container Management adoption maturity can be ASSESSED as level 3/Operational",
-    "answers": [
-      { "text": "Applications are running in containers in production", "points": 5 },
-      { "text": "OpenShift Platform Plus products (ACM, ACS) are being used", "points": 5 },
-      { "text": "Automation around infrastructure operations", "points": 5 },
-      { "text": "Teams have completed Red Hat training courses (DO280)", "points": 5 },
-      { "text": "Internal teams cite container strategy as organizationally strategic", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "For the App Platform TDP, what are things we can do to improve customers PROFICIENCY from level 1/Initial to level 2/Developing?",
-    "answers": [
-      { "text": "Hands-on Developer Day workshops", "points": 5 },
-      { "text": "Red Hat training courses (DO188 and DO288)", "points": 5 },
-      { "text": "Launch engagement around pilot application", "points": 5 },
-      { "text": "Red Hat consulting for assistance", "points": 5 },
-      { "text": "Executive sponsorship (champion)", "points": 5 },
-      { "text": "Use Red Hat build tools for early production apps", "points": 5 }
-    ]
-  },
-  {
-    "prompt": "What are steps that can be taken for a customer in the INITIAL stages of Virtualization adoption maturity?",
-    "answers": [
-      { "text": "OpenShift Virtualization adoption workshop to identify use cases", "points": 5 },
-      { "text": "Assessment of feature parity with customer's previous hypervisor (i.e. VMware vSphere)", "points": 5 },
-      { "text": "Red Hat training courses (DO316 and DO280)", "points": 5 },
-      { "text": "Launch engagement to migrate pilot VM workload", "points": 5 }
-    ]
-  }
-]
+{
+  "rounds": [
+    {
+      "title": "Round 1 - Warmup",
+      "questions": [
+        {
+          "prompt": "Name the members of the CLT (Corporate Leadership Team) at Red Hat",
+          "answers": [
+            {"text": "Matt Hicks - Chief Executive Officer", "points": 5},
+            {"text": "Michael Ferris - Chief Strategy Officer", "points": 5},
+            {"text": "Mario Vaz - Chief Financial Officer", "points": 10},
+            {"text": "Andrew Brown - Chief Revenue Officer", "points": 5},
+            {"text": "Chris Wright - Chief Technology Officer", "points": 10},
+            {"text": "Leigh Day - Chief Marketing Officer", "points": 5},
+            {"text": "Ashesh Badani - Chief Product Officer", "points": 10},
+            {"text": "Marco Bill - Chief Information Officer", "points": 10},
+            {"text": "Jenn Dudeck - Chief People Officer", "points": 5},
+            {"text": "Tom Savage - SVP Legal Counsel", "points": 10}
+          ]
+        },
+        {
+          "prompt": "What are the 6 Technical Decision Points?",
+          "answers": [
+            {"text": "Server Cloud", "points": 10},
+            {"text": "Container Management", "points": 5},
+            {"text": "Virtualization", "points": 5},
+            {"text": "App Platform", "points": 5},
+            {"text": "Automation", "points": 5},
+            {"text": "AI", "points": 10}
+          ]
+        },
+        {
+          "prompt": "What are the 4 dimensions of Adoption Maturity?",
+          "answers": [
+            {"text": "Proficiency", "points": 5},
+            {"text": "Perception", "points": 5},
+            {"text": "Product Usage", "points": 5},
+            {"text": "Performance", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Name the 3 matricies per TDP",
+          "answers": [
+            {"text": "Assess", "points": 5},
+            {"text": "Measure", "points": 5},
+            {"text": "Advance", "points": 5}
+          ]
+        },
+        {
+          "prompt": "What are the 5 stages of a Matrix?",
+          "answers": [
+            {"text": "Initial", "points": 5},
+            {"text": "Developing", "points": 5},
+            {"text": "Operational", "points": 5},
+            {"text": "Optimizing", "points": 5},
+            {"text": "Innovator ", "points": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Round 2 - Advanced Questions",
+      "questions": [
+        {
+          "prompt": "The customer just advanced from level 3/Operational to level 4/Optimizing. What are the 6 actions we took that align to the 4 dimentions? ",
+          "answers": [
+            {"text": "Increase feature adoption", "points": 5},
+            {"text": "Automate deployments", "points": 5},
+            {"text": "Improve KPIs", "points": 5},
+            {"text": "Develop internal champions", "points": 5},
+            {"text": "Encourage peer training", "points": 5},
+            {"text": "Track user sentiment", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Your customer moved from level 2/Developing  to level 3/Operational . How did you MEASURE this?",
+          "answers": [
+            {"text": "% active users or teams", "points": 5},
+            {"text": "% KPIs automatically tracked", "points": 5},
+            {"text": "% users achieving high proficiency", "points": 5},
+            {"text": "Net Promoter Score (NPS)", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Your customer moved from level 1/Initial  to level 2/Developing. How did you ASSESS this?",
+          "answers": [
+            {"text": "Limited usage across teams with early-stage implementation", "points": 5},
+            {"text": "The customer initiatives define KPIs and value is seen", "points": 5},
+            {"text": "Users can perform essential tasks", "points": 5},
+            {"text": "Perception of value improving and concerns remain", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Name 5 MGM hotels on the Vegas strip",
+          "answers": [
+            {"text": "Bellagio", "points": 5},
+            {"text": "MGM Grand", "points": 5},
+            {"text": "Park MGM", "points": 5},
+            {"text": "Aria", "points": 5},
+            {"text": "Cosmopolitan", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Your customer moved from level 2/Developing to level 3/Operational. How will you ADVANCE the customer to innovator?",
+          "answers": [
+            {"text": "Adopt latest releases, evaluate emerging capabilities", "points": 5},
+            {"text": "Continuously optimize, contribute industry best practices", "points": 5},
+            {"text": "Invest in advanced training, develop expert-level skills across teams", "points": 5},
+            {"text": "Thought leadership, participate in industry events, open-source contributions", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Name ways a customer's Container Management adoption maturity can be ASSESSED as level 3/Operational",
+          "answers": [
+            {"text": "Applications are running in containers in production", "points": 5},
+            {"text": "OpenShift Platform Plus products (ACM, ACS) are being used", "points": 5},
+            {"text": "Automation around infrastructure operations", "points": 5},
+            {"text": "Teams have completed Red Hat training courses (DO280)", "points": 5},
+            {"text": "Internal teams cite container strategy as organizationally strategic", "points": 5}
+          ]
+        },
+        {
+          "prompt": "For the App Platform TDP, what are things we can do to improve customers PROFICIENCY from level 1/Initial to level 2/Developing?",
+          "answers": [
+            {"text": "Hands-on Developer Day workshops", "points": 5},
+            {"text": "Red Hat training courses (DO188 and DO288)", "points": 5},
+            {"text": "Launch Team engagement around pilot application", "points": 5},
+            {"text": "Red Hat consulting for assistance", "points": 5},
+            {"text": "Executive sponsorship (champion)", "points": 5},
+            {"text": "Use Red Hat build tools for early production apps", "points": 5}
+          ]
+        },
+        {
+          "prompt": "What are steps that can be taken for a customer in the INITIAL stages of Virtualization adoption maturity?",
+          "answers": [
+            {"text": "OpenShift Virtualization adoption workshop to identify use cases", "points": 5},
+            {"text": "Assessment of feature parity with customer's previous hypervisor (i.e. VMware vSphere)", "points": 5},
+            {"text": "Red Hat training courses (DO316 and DO280)", "points": 5},
+            {"text": "Launch Team engagement to migrate pilot VM workload", "points": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Bonus Round: Greater Point Values",
+      "questions": [
+        {
+          "prompt": "What metrics might you use to quantify a customer has reached Level 3/Operational maturity?",
+          "answers": [
+            {"text": "# product entitlements purchased", "points": 5},
+            {"text": "# defined KPIs", "points": 5},
+            {"text": "% users trained", "points": 5},
+            {"text": "Customer Effort Score (CES)", "points": 5},
+            {"text": "% subscription units consumed", "points": 5},
+            {"text": "# tracked KPIs", "points": 5},
+            {"text": "% trained users demonstrating essential tasks", "points": 5},
+            {"text": "% increase in perceived value", "points": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "BONUS TIE BREAKER ",
+      "questions": [
+        {
+          "prompt": "In which cities has the Red Hat Summit previously been held?",
+          "answers": [
+            {"text": "Boston, MA", "points": 5},
+            {"text": "San Francisco, CA", "points": 5},
+            {"text": "Denver, CO", "points": 5},
+            {"text": "Chicago, IL", "points": 10},
+            {"text": "San Diego, CA", "points": 10},
+            {"text": "Nashville, TN", "points": 15},
+            {"text": "New Orleans, LA", "points": 15}
+          ]
+        }
+      ]
+    }
+  ]
+}

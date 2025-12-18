@@ -1,10 +1,9 @@
 import streamlit as st
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple, Any
 import json
 import os
 import base64
 import time
-
 
 st.set_page_config(page_title="Fedora Feud", page_icon="❓", layout="wide")
 
@@ -12,17 +11,24 @@ st.set_page_config(page_title="Fedora Feud", page_icon="❓", layout="wide")
 CUSTOM_CSS = """
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
-  html, body { background: rgb(1 24 51) !important; }
-  [data-testid="stAppViewContainer"], [data-testid="stApp"], [data-testid="stAppViewContainer"] > .main { background: rgb(1 24 51) !important; }
+
+  /* Force dark UI even if OS/browser is light */
+  :root { color-scheme: dark !important; }
+  html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [data-testid="stAppViewContainer"] > .main {
+    background: rgb(1 24 51) !important;
+    color-scheme: dark !important;
+    color: rgba(255,255,255,0.92) !important;
+  }
+  [data-baseweb="popover"], [data-baseweb="menu"] { color-scheme: dark !important; }
 
   .stMainBlockContainer { padding-top: 0 }
   h3 { font-size: 3.75rem !important; }
 
-  .ff-card { 
+  .ff-card {
     backdrop-filter: blur(10px);
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 18px; 
+    border-radius: 18px;
     box-shadow: 0 10px 30px rgba(0,0,0,.35);
     padding: 1rem 1.2rem;
   }
@@ -47,7 +53,6 @@ CUSTOM_CSS = """
     transition: transform .06s ease, filter .2s ease;
     min-width: 30px;
   }
-
   .stButton>button:hover { filter: brightness(1.07) }
   .stButton>button:active { transform: translateY(1px) }
 
@@ -98,24 +103,15 @@ CUSTOM_CSS = """
     color: white !important;
     font-weight: 600 !important;
   }
-
-	/* Auto-hide for strike overlay (2s) */
-	.ff-strike.auto-hide {
-		animation: strikeHide 4s forwards ease-in;
-	}
-	@keyframes strikeHide {
-		0%   { opacity: 1; visibility: visible; }
-		80%  { opacity: 0; }
-		100% { opacity: 0; visibility: hidden; }
-	}
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # ---------------------------
-# Data loading (from file)
+# Data loading (with rounds)
 # ---------------------------
-Question = Dict[str, object]
+Question = Dict[str, Any]
+Round = Dict[str, Any]
 
 DEFAULT_QUESTIONS: List[Question] = [
     {
@@ -131,29 +127,53 @@ DEFAULT_QUESTIONS: List[Question] = [
     }
 ]
 
-def load_questions_from_file(path: str) -> List[Question]:
+def _clean_questions(raw_questions: Any, max_answers: int = 10) -> List[Question]:
+    if not isinstance(raw_questions, list):
+        return []
+    cleaned: List[Question] = []
+    for q in raw_questions:
+        if not isinstance(q, dict):
+            continue
+        prompt = q.get("prompt")
+        answers = q.get("answers", [])
+        if isinstance(prompt, str) and isinstance(answers, list) and 1 <= len(answers) <= max_answers:
+            cleaned.append({
+                "prompt": prompt,
+                "answers": [{"text": str(a.get("text", "")), "points": int(a.get("points", 0))} for a in answers if isinstance(a, dict)],
+            })
+    return cleaned
+
+def load_rounds_from_file(path: str) -> List[Round]:
+    # Supports:
+    #  - New format: {"rounds":[{"title":"Round 1","questions":[...]}]}
+    #  - Old format: [ {prompt, answers}, ... ]  -> becomes one round "Round 1"
     if not os.path.exists(path):
-        return DEFAULT_QUESTIONS
+        return [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
+
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        cleaned: List[Question] = []
-        for q in data:
-            prompt = q.get("prompt")
-            answers = q.get("answers", [])
-            if isinstance(prompt, str) and isinstance(answers, list) and 1 <= len(answers) <= 10:
-                cleaned.append({
-                    "prompt": prompt,
-                    "answers": [
-                        {"text": str(a.get("text", "")), "points": int(a.get("points", 0))}
-                        for a in answers
-                    ],
-                })
-        return cleaned or DEFAULT_QUESTIONS
-    except Exception:
-        return DEFAULT_QUESTIONS
 
-QUESTIONS: List[Question] = load_questions_from_file("files/questions.json")
+        if isinstance(data, dict) and isinstance(data.get("rounds"), list):
+            rounds: List[Round] = []
+            for r in data["rounds"]:
+                if not isinstance(r, dict):
+                    continue
+                title = r.get("title", "Round")
+                questions = _clean_questions(r.get("questions", []))
+                if isinstance(title, str) and questions:
+                    rounds.append({"title": title, "questions": questions})
+            return rounds or [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
+
+        if isinstance(data, list):
+            questions = _clean_questions(data)
+            return [{"title": "Round 1", "questions": questions or DEFAULT_QUESTIONS}]
+
+        return [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
+    except Exception:
+        return [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
+
+ROUNDS: List[Round] = load_rounds_from_file("files/questions.json")
 HAS_LOGO = os.path.exists("fedora_feud.png")
 
 # ---------------------------------
@@ -162,14 +182,23 @@ HAS_LOGO = os.path.exists("fedora_feud.png")
 defaults = {
     "started": False,
     "finished": False,
-    "q_index": 0,
+
+    # rounds
+    "screen": "home",        # home | round_intro | question | final
+    "round_index": 0,
+    "q_in_round": 0,
+
+    # teams
     "num_teams": 2,
     "team_scores": [],
+
+    # per-question maps (keyed by (round_index, q_in_round))
     "revealed_map": {},
     "assigned_map": {},
+
+    # strike overlay
     "show_strike": False,
     "strike_nonce": 0,
-    "strike_ts": 0.0,
     "strike_hide_at": 0.0,
 }
 for k, v in defaults.items():
@@ -185,83 +214,122 @@ def team_labels(n: int) -> List[str]:
 
 def clamp(n, mn, mx): return max(mn, min(n, mx))
 
-def load_question(i: int) -> Question:
-    return QUESTIONS[i % len(QUESTIONS)]
+def current_round() -> Round:
+    return ROUNDS[st.session_state.round_index]
 
-def ensure_state_for_question(i: int):
-    q = load_question(i)
-    n_answers = clamp(len(q["answers"]), 1, 10)
-    if i not in st.session_state.revealed_map:
-        st.session_state.revealed_map[i] = [False] * n_answers
-    if i not in st.session_state.assigned_map:
-        st.session_state.assigned_map[i] = [None] * n_answers
+def round_questions() -> List[Question]:
+    return current_round().get("questions", [])
+
+def current_question() -> Question:
+    return round_questions()[st.session_state.q_in_round]
+
+QKey = Tuple[int, int]
+
+def ensure_state_for_current_question() -> QKey:
+    rid: QKey = (st.session_state.round_index, st.session_state.q_in_round)
+    q = current_question()
+    n_answers = clamp(len(q.get("answers", [])), 1, 10)
+
+    if rid not in st.session_state.revealed_map:
+        st.session_state.revealed_map[rid] = [False] * n_answers
+    else:
+        cur = st.session_state.revealed_map[rid]
+        if len(cur) != n_answers:
+            st.session_state.revealed_map[rid] = (cur + [False] * n_answers)[:n_answers]
+
+    if rid not in st.session_state.assigned_map:
+        st.session_state.assigned_map[rid] = [None] * n_answers
+    else:
+        cur2 = st.session_state.assigned_map[rid]
+        if len(cur2) != n_answers:
+            st.session_state.assigned_map[rid] = (cur2 + [None] * n_answers)[:n_answers]
+
+    return rid
 
 def start_game(num_teams: int):
     st.session_state.num_teams = clamp(int(num_teams), 1, 15)
     st.session_state.team_scores = [0] * st.session_state.num_teams
-    st.session_state.q_index = 0
+
+    st.session_state.round_index = 0
+    st.session_state.q_in_round = 0
+    st.session_state.revealed_map = {}
+    st.session_state.assigned_map = {}
+
     st.session_state.finished = False
     st.session_state.started = True
+    st.session_state.screen = "round_intro"
 
 def go_prev():
-    if st.session_state.q_index > 0:
-        st.session_state.q_index -= 1
+    if st.session_state.screen == "question":
+        if st.session_state.q_in_round > 0:
+            st.session_state.q_in_round -= 1
+            return
+        st.session_state.screen = "round_intro"
+        return
+
+    if st.session_state.screen == "round_intro":
+        if st.session_state.round_index > 0:
+            st.session_state.round_index -= 1
+            st.session_state.q_in_round = max(0, len(round_questions()) - 1)
+            st.session_state.screen = "question"
+            return
 
 def go_next():
-    if st.session_state.q_index < len(QUESTIONS) - 1:
-        st.session_state.q_index += 1
+    if st.session_state.screen == "round_intro":
+        st.session_state.screen = "question"
+        return
+
+    if st.session_state.screen != "question":
+        return
+
+    if st.session_state.q_in_round < len(round_questions()) - 1:
+        st.session_state.q_in_round += 1
+        return
+
+    # end of round
+    if st.session_state.round_index < len(ROUNDS) - 1:
+        st.session_state.round_index += 1
+        st.session_state.q_in_round = 0
+        st.session_state.screen = "round_intro"
     else:
         st.session_state.finished = True
+        st.session_state.screen = "final"
 
 def go_home():
-    # reset seguro
-    st.session_state.started = False
-    st.session_state.finished = False
     for k, v in defaults.items():
         st.session_state[k] = v
 
 def assign_team(ans_idx: int, team_idx: Optional[int]):
-    i = st.session_state.q_index
-    ensure_state_for_question(i)
-    q = load_question(i)
+    rid = ensure_state_for_current_question()
+    q = current_question()
     pts = int(q["answers"][ans_idx]["points"])
-    prev = st.session_state.assigned_map[i][ans_idx]
+    prev = st.session_state.assigned_map[rid][ans_idx]
 
     if prev is not None:
         st.session_state.team_scores[prev] = max(0, st.session_state.team_scores[prev] - pts)
 
-    st.session_state.assigned_map[i][ans_idx] = team_idx
+    st.session_state.assigned_map[rid][ans_idx] = team_idx
     if team_idx is not None:
         st.session_state.team_scores[team_idx] += pts
 
-    st.session_state.revealed_map[i][ans_idx] = True
+    st.session_state.revealed_map[rid][ans_idx] = True
 
 def reveal_only(ans_idx: int):
-    i = st.session_state.q_index
-    ensure_state_for_question(i)
-    q = load_question(i)
+    rid = ensure_state_for_current_question()
+    q = current_question()
     pts = int(q["answers"][ans_idx]["points"])
 
-    prev_team = st.session_state.assigned_map[i][ans_idx]
+    prev_team = st.session_state.assigned_map[rid][ans_idx]
     if prev_team is not None:
-        st.session_state.team_scores[prev_team] = max(
-            0, st.session_state.team_scores[prev_team] - pts
-        )
-        st.session_state.assigned_map[i][ans_idx] = None
+        st.session_state.team_scores[prev_team] = max(0, st.session_state.team_scores[prev_team] - pts)
+        st.session_state.assigned_map[rid][ans_idx] = None
 
-    st.session_state.revealed_map[i][ans_idx] = True
-
-
-def toggle_strike():
-    st.session_state.show_strike = not st.session_state.show_strike
-    if st.session_state.show_strike:
-        st.session_state.strike_nonce += 1
+    st.session_state.revealed_map[rid][ans_idx] = True
 
 def trigger_strike():
     st.session_state.show_strike = True
     st.session_state.strike_nonce = st.session_state.get("strike_nonce", 0) + 1
-    st.session_state.strike_hide_at = time.time() + 2.0   # duración visible (segundos)
-
+    st.session_state.strike_hide_at = time.time() + 2.0  # seconds
 
 # ---------------------------
 # Home (team count)
@@ -272,73 +340,170 @@ if not st.session_state.started and not st.session_state.finished:
         if HAS_LOGO:
             with open("fedora_feud.png","rb") as fh:
                 b64 = base64.b64encode(fh.read()).decode()
-            st.markdown(f"<div style='display:flex;justify-content:center;'><img src='data:image/png;base64,{b64}' style='width:80%;height:auto;'></div>", unsafe_allow_html=True)
-        teams = st.selectbox("Choose the number of teams and press Start.", options=list(range(1, 16)), index=1, help="From 1 to 15", key="teams_select")
+            st.markdown(
+                f"<div style='display:flex;justify-content:center;'><img src='data:image/png;base64,{b64}' style='width:80%;height:auto;'></div>",
+                unsafe_allow_html=True
+            )
+
+        teams = st.selectbox(
+            "Choose the number of teams and press Start.",
+            options=list(range(1, 16)),
+            index=1,
+            help="From 1 to 15",
+            key="teams_select"
+        )
         st.write("")
         st.button("🚀 Start", use_container_width=True, on_click=start_game, args=(teams,))
     st.stop()
 
 # ---------------------------
-# Final results
+# Final results (centered)
 # ---------------------------
-if st.session_state.finished:
+if st.session_state.finished or st.session_state.screen == "final":
     labels = team_labels(st.session_state.num_teams)
     scores = st.session_state.team_scores
     ranking = sorted(zip(labels, scores), key=lambda x: x[1], reverse=True)
-    st.markdown("<div class='ff-center' style='padding:2rem 0'>", unsafe_allow_html=True)
-    st.markdown("<h1 class='ff-title'>🏁 Final standings</h1>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    for pos, (lab, pts) in enumerate(ranking, start=1):
-        st.markdown(f"<div class='ff-card' style='margin:.35rem 0;'><span class='ff-big'>#{pos}</span><b class='ff-big' style='margin-left: 1%; margin-right: 1%'>Team {lab}</b>{pts} pts</div>", unsafe_allow_html=True)
-    st.divider()
-    st.balloons()
-    c1, c2 = st.columns([1,1])
-    with c1:
-        st.button("🏠 Home", on_click=go_home, use_container_width=True)
+
+    c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        st.button(
-            "🔁 Play again",
-            on_click=lambda: (
-                setattr(st.session_state, 'finished', False),
-                setattr(st.session_state, 'q_index', 0),
-                setattr(st.session_state, 'revealed_map', {}),
-                setattr(st.session_state, 'assigned_map', {}),
-                setattr(st.session_state, 'team_scores', [0]*st.session_state.num_teams)
-            ),
-            use_container_width=True,
+        st.markdown("<div class='ff-center' style='padding:2.0rem 0'>", unsafe_allow_html=True)
+        st.markdown("<h1 class='ff-title' style='font-size:4rem; margin-bottom:1rem;'>🏁 Final Standings</h1>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        for pos, (lab, pts) in enumerate(ranking, start=1):
+            st.markdown(
+                f"<div class='ff-card' style='margin:.45rem 0; text-align:left;'>"
+                f"<span class='ff-big'>#{pos}</span>"
+                f"<b class='ff-big' style='margin-left: 1%; margin-right: 1%'>Team {lab}</b>"
+                f"{pts} pts</div>",
+                unsafe_allow_html=True
+            )
+
+        st.divider()
+
+        st.balloons()
+        
+        
+        st.button("🏠 Play again", on_click=go_home, use_container_width=True)
+
+    st.stop()
+
+# ---------------------------
+# Round intro screen
+# ---------------------------
+if st.session_state.started and st.session_state.screen == "round_intro":
+    labels = team_labels(st.session_state.num_teams)
+    r = current_round()
+    title = r.get("title", f"Round {st.session_state.round_index + 1}")
+
+    # ---- CENTERED CONTAINER ----
+    left, center, right = st.columns([1, 2, 1])
+    with center:
+
+        # Title (hard centered)
+        st.markdown(
+            f"""
+            <div class="ff-center" style="margin-top:2.5rem; margin-bottom:1.5rem;">
+                <h1 class="ff-title" style="font-size:4.2rem; margin:0;">
+                    🎯 {title}
+                </h1>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
+        st.button("🚀 GO!", on_click=go_next, use_container_width=True)
+
+        # ---- Standings (only after round 1) ----
+        if st.session_state.round_index > 0:
+            st.markdown("<div style='margin-top:2.2rem;'></div>", unsafe_allow_html=True)
+
+            ranking = sorted(
+                zip(labels, st.session_state.team_scores),
+                key=lambda x: x[1],
+                reverse=True,
+            )
+
+            for pos, (lab, pts) in enumerate(ranking, start=1):
+                st.markdown(
+                    f"""
+                    <div class="ff-card" style="margin:.45rem 0;">
+                        <span class="ff-big">#{pos}</span>
+                        <b class="ff-big" style="margin-left:1%; margin-right:1%;">
+                            Team {lab}
+                        </b>
+                        {pts} pts
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
     st.stop()
 
 # ---------------------------
 # Question screen
 # ---------------------------
-q = load_question(st.session_state.q_index)
-ensure_state_for_question(st.session_state.q_index)
-revealed = st.session_state.revealed_map[st.session_state.q_index]
-assigned = st.session_state.assigned_map[st.session_state.q_index]
+q = current_question()
+rid = ensure_state_for_current_question()
+revealed = st.session_state.revealed_map[rid]
+assigned = st.session_state.assigned_map[rid]
 labels = team_labels(st.session_state.num_teams)
 
-# Header
 head_left, head_right = st.columns([4, 1])
 with head_left:
     st.markdown(f"### ❓ {q['prompt']}")
 with head_right:
-    st.caption(f"Question {st.session_state.q_index + 1} / {len(QUESTIONS)}")
+    rtitle = current_round().get("title", f"Round {st.session_state.round_index + 1}")
+    st.caption(f"{rtitle} - Q {st.session_state.q_in_round + 1} / {len(round_questions())}")
+
+# st.caption(f"{rtitle}\n\nQ {st.session_state.q_in_round + 1} / {len(round_questions())}" )
 
 st.divider()
 
-# Strike 
+# Strike (button aligned to the right)
 _empt, strike_col = st.columns([12, 1])
 with strike_col:
-    st.button("❌", use_container_width=True, on_click=trigger_strike)
+    st.button("❌", key="strike_btn", on_click=trigger_strike)
+
+st.components.v1.html(
+    """
+    <script>
+    (function () {
+      const doc = window.parent.document;
+
+      // Add once (Streamlit reruns the script often)
+      if (window.parent.__fedoraFeudHotkeysBound) return;
+      window.parent.__fedoraFeudHotkeysBound = true;
+
+      doc.addEventListener("keydown", function (evt) {
+
+        // Don't trigger while typing in inputs/selects
+        const el = doc.activeElement;
+        const tag = el ? el.tagName : "";
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+        if (evt.key === "e" || evt.key === "E") {
+          // Find the ❌ button and click it
+          const buttons = Array.from(doc.querySelectorAll("button"));
+          const strikeBtn = buttons.find(b => (b.innerText || "").trim() === "❌");
+          if (strikeBtn) strikeBtn.click();
+        }
+      });
+    })();
+    </script>
+    """,
+    height=0,
+)
+
 
 # Answers
-for i, a in enumerate(q['answers']):
-    left, right = st.columns([11, 1])  # ~75% / 25%
+for i, a in enumerate(q["answers"]):
+    left, right = st.columns([11, 1])
     with left:
         if revealed[i]:
             st.markdown(
-                f"<div class='ff-card ff-success ff-center popIn'><div class='ff-big'>{a['text']}</div><div>{a['points']} pts</div></div>",
+                f"<div class='ff-card ff-success ff-center popIn'>"
+                f"<div class='ff-big'>{a['text']}</div><div>{a['points']} pts</div></div>",
                 unsafe_allow_html=True,
             )
         else:
@@ -348,7 +513,7 @@ for i, a in enumerate(q['answers']):
             )
 
     with right:
-        dd_key = f"sel_{st.session_state.q_index}_{i}" 
+        dd_key = f"sel_{st.session_state.round_index}_{st.session_state.q_in_round}_{i}"
         if dd_key not in st.session_state:
             if assigned[i] is not None:
                 st.session_state[dd_key] = labels[assigned[i]]
@@ -362,11 +527,11 @@ for i, a in enumerate(q['answers']):
         def on_select_change(ans_idx=i, key=dd_key):
             val = st.session_state[key]
             if val == "(choose)":
-                # no hacer nada
                 return
-            elif val == "Show":
+            if val == "Show":
                 reveal_only(ans_idx)
-            elif val in labels:
+                return
+            if val in labels:
                 assign_team(ans_idx, labels.index(val))
 
         st.selectbox(
@@ -377,26 +542,29 @@ for i, a in enumerate(q['answers']):
             label_visibility="collapsed",
             on_change=on_select_change,
         )
+
     st.write("")
 
 st.divider()
 
 # Scoreboard
-items = ''.join([f"<div class='ff-pill'><span class='lbl'>Team {l}:</span><span class='val'>{v}</span></div>" for l,v in zip(labels, st.session_state.team_scores)])
+items = ''.join([
+    f"<div class='ff-pill' style='background-color: orange;color: rgb(14, 17, 23);'>"
+    f"<span class='lbl'>Team {l}:</span><span class='val'>{v}</span></div>"
+    for l, v in zip(labels, st.session_state.team_scores)
+])
 st.markdown(f"<div class='ff-toolbar'>{items}</div>", unsafe_allow_html=True)
 
 st.divider()
 
 # Navigation
-nav1, nav2, nav3 = st.columns([1, 2, 1])
+nav1, nav_mid, nav3 = st.columns([1, 2, 1])
 with nav1:
     st.button("⬅️ Previous", use_container_width=True, on_click=go_prev)
 with nav3:
     st.button("Next ➡️", use_container_width=True, on_click=go_next)
-with nav2:
-    st.button("🏠 Home", on_click=go_home)
 
-# Strike overlay
+# Strike overlay (auto-hide via rerun)
 if st.session_state.show_strike:
     st.markdown(
         f"<div class='ff-strike' id='strike-{st.session_state.strike_nonce}'><div class='ff-x'>✕</div></div>",

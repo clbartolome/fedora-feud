@@ -60,13 +60,13 @@ You can use either **Podman** or **Docker**.
 ### Build the image
 
 ```bash
-podman build -t fedora-feud:1.0 .
+podman build -t fedora-feud:2.0 .
 ```
 
 ### Run the container
 
 ```bash
-podman run -p 8501:8501 fedora-feud:1.0
+podman run -p 8501:8501 fedora-feud:2.0
 ```
 
 Then visit:
@@ -114,15 +114,15 @@ You can add as many questions as you like!
 For this section we're using [Quay.io](https://quay.io):
 
 ```bash
-podman tag fedora-feud:1.0 quay.io/<your-username>/fedora-feud:1.0
+podman tag fedora-feud:2.0 quay.io/calopezb/fedora-feud:2.0
 podman login quay.io
-podman push quay.io/<your-username>/fedora-feud:1.0
+podman push quay.io/calopezb/fedora-feud:2.0
 ```
 
 Then you can pull and run it anywhere with:
 
 ```bash
-podman run -p 8501:8501 quay.io/<your-username>/fedora-feud:1.0
+podman run -p 8501:8501 quay.io/calopezb/fedora-feud:2.0
 ```
 
 To start the app in OCP:
@@ -132,7 +132,7 @@ To start the app in OCP:
 oc new-project fedora-feud
 
 # Deploy the app
-oc new-app --image=quay.io/calopezb/fedora-feud:1.0 --name=fedora-feud
+oc new-app --image=quay.io/calopezb/fedora-feud:2.0 --name=fedora-feud
 
 # Expose the app
 oc expose svc fedora-feud --port 8501  
