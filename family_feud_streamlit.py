@@ -162,7 +162,11 @@ def load_rounds_from_file(path: str) -> List[Round]:
                 title = r.get("title", "Round")
                 questions = _clean_questions(r.get("questions", []))
                 if isinstance(title, str) and questions:
-                    rounds.append({"title": title, "questions": questions})
+                    rounds.append({
+                        "title": title,
+                        "questions": questions,
+                        "tiebreaker": bool(r.get("tiebreaker", False)),
+                    })
             return rounds or [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
 
         if isinstance(data, list):
@@ -184,7 +188,7 @@ defaults = {
     "finished": False,
 
     # rounds
-    "screen": "home",        # home | round_intro | question | final
+    "screen": "home",        # home | round_intro | question | results_wait| final
     "round_index": 0,
     "q_in_round": 0,
 
@@ -200,6 +204,7 @@ defaults = {
     "show_strike": False,
     "strike_nonce": 0,
     "strike_hide_at": 0.0,
+    "tiebreaker_used": False,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -224,6 +229,32 @@ def current_question() -> Question:
     return round_questions()[st.session_state.q_in_round]
 
 QKey = Tuple[int, int]
+
+def is_tiebreaker_round(idx: int) -> bool:
+    return bool(ROUNDS[idx].get("tiebreaker", False))
+
+def last_normal_round_index() -> int:
+    normal_idxs = [i for i in range(len(ROUNDS)) if not is_tiebreaker_round(i)]
+    return normal_idxs[-1] if normal_idxs else 0
+
+def next_normal_round_index(cur: int) -> Optional[int]:
+    for i in range(cur + 1, len(ROUNDS)):
+        if not is_tiebreaker_round(i):
+            return i
+    return None
+
+def top_is_tied() -> bool:
+    scores = st.session_state.team_scores
+    if not scores:
+        return False
+    best = max(scores)
+    return sum(1 for s in scores if s == best) >= 2
+
+def find_tiebreaker_round_index() -> Optional[int]:
+    for idx, r in enumerate(ROUNDS):
+        if bool(r.get("tiebreaker", False)):
+            return idx
+    return None
 
 def ensure_state_for_current_question() -> QKey:
     rid: QKey = (st.session_state.round_index, st.session_state.q_in_round)
@@ -258,6 +289,7 @@ def start_game(num_teams: int):
     st.session_state.finished = False
     st.session_state.started = True
     st.session_state.screen = "round_intro"
+    st.session_state.tiebreaker_used = False
 
 def go_prev():
     if st.session_state.screen == "question":
@@ -286,14 +318,34 @@ def go_next():
         st.session_state.q_in_round += 1
         return
 
-    # end of round
-    if st.session_state.round_index < len(ROUNDS) - 1:
-        st.session_state.round_index += 1
+    # end of round (NORMAL progression skips tiebreaker)
+    cur = st.session_state.round_index
+    last_normal = last_normal_round_index()
+
+    # If we finished the last NORMAL round, decide tie -> tiebreaker or results
+    if cur == last_normal:
+        tb_idx = find_tiebreaker_round_index()
+        if tb_idx is not None and top_is_tied():
+            st.session_state.round_index = tb_idx
+            st.session_state.q_in_round = 0
+            st.session_state.screen = "round_intro"
+            return
+
+        st.session_state.finished = True
+        st.session_state.screen = "results_wait"
+        return
+
+    # Otherwise, go to the next NORMAL round (skip any tiebreaker rounds)
+    nxt = next_normal_round_index(cur)
+    if nxt is not None:
+        st.session_state.round_index = nxt
         st.session_state.q_in_round = 0
         st.session_state.screen = "round_intro"
-    else:
-        st.session_state.finished = True
-        st.session_state.screen = "final"
+        return
+
+    # Fallback (shouldn't happen)
+    st.session_state.finished = True
+    st.session_state.screen = "results_wait"
 
 def go_home():
     for k, v in defaults.items():
@@ -359,7 +411,7 @@ if not st.session_state.started and not st.session_state.finished:
 # ---------------------------
 # Final results (centered)
 # ---------------------------
-if st.session_state.finished or st.session_state.screen == "final":
+if st.session_state.screen == "final":
     labels = team_labels(st.session_state.num_teams)
     scores = st.session_state.team_scores
     ranking = sorted(zip(labels, scores), key=lambda x: x[1], reverse=True)
@@ -387,6 +439,52 @@ if st.session_state.finished or st.session_state.screen == "final":
         st.button("🏠 Play again", on_click=go_home, use_container_width=True)
 
     st.stop()
+# ---------------------------
+# Results wait screen (manual pause)
+# ---------------------------
+if st.session_state.finished and st.session_state.screen == "results_wait":
+
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        st.markdown(
+            """
+            <div class="ff-center" style="padding:2.8rem 0 1.2rem 0;">
+              <h1 class="ff-title" style="font-size:3.8rem; margin-bottom:.6rem;">
+                Calculating results…
+              </h1>
+              <div style="opacity:.85; font-size:1.1rem;">
+                Please wait a moment
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+
+        # Loading GIF
+        if os.path.exists("load.gif"):
+            with open("load.gif", "rb") as fh:
+                b64 = base64.b64encode(fh.read()).decode()
+
+            st.markdown(
+                f"""
+                <div class="ff-center">
+                <img src="data:image/gif;base64,{b64}"
+                    style="max-width:240px; width:100%; opacity:.95;" />
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            
+        st.divider()   
+        
+
+        st.button("Continue ➡️", on_click=lambda: setattr(st.session_state, "screen", "final"), use_container_width=True)
+
+    st.stop()
+
 
 # ---------------------------
 # Round intro screen
@@ -533,11 +631,14 @@ for i, a in enumerate(q["answers"]):
                 return
             if val in labels:
                 assign_team(ans_idx, labels.index(val))
+                
+        # Ensure current value is valid
+        if st.session_state[dd_key] not in options:
+            st.session_state[dd_key] = "(choose)"
 
         st.selectbox(
             f"Select team for answer {i+1}",
             options=options,
-            index=options.index(st.session_state[dd_key]) if st.session_state[dd_key] in options else 0,
             key=dd_key,
             label_visibility="collapsed",
             on_change=on_select_change,

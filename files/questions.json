@@ -1,7 +1,7 @@
 {
   "rounds": [
     {
-      "title": "Round 1 - Warmup",
+      "title": "Round One: Warm Up",
       "questions": [
         {
           "prompt": "Name the members of the CLT (Corporate Leadership Team) at Red Hat",
@@ -59,7 +59,7 @@
       ]
     },
     {
-      "title": "Round 2 - Advanced Questions",
+      "title": "Round Two",
       "questions": [
         {
           "prompt": "The customer just advanced from level 3/Operational to level 4/Optimizing. What are the 6 actions we took that align to the 4 dimentions? ",
@@ -96,71 +96,77 @@
             {"text": "Bellagio", "points": 5},
             {"text": "MGM Grand", "points": 5},
             {"text": "Park MGM", "points": 5},
-            {"text": "Aria", "points": 5},
-            {"text": "Cosmopolitan", "points": 5}
+            {"text": "Aria", "points": 10},
+            {"text": "Cosmopolitan", "points": 10}
           ]
-        },
+        }
+      ]
+    },
+    {
+      "title": "Round Three",
+      "questions": [
         {
           "prompt": "Your customer moved from level 2/Developing to level 3/Operational. How will you ADVANCE the customer to innovator?",
           "answers": [
-            {"text": "Adopt latest releases, evaluate emerging capabilities", "points": 5},
-            {"text": "Continuously optimize, contribute industry best practices", "points": 5},
-            {"text": "Invest in advanced training, develop expert-level skills across teams", "points": 5},
-            {"text": "Thought leadership, participate in industry events, open-source contributions", "points": 5}
+            {"text": "Adopt latest releases, evaluate emerging capabilities", "points": 10},
+            {"text": "Continuously optimize, contribute industry best practices", "points": 10},
+            {"text": "Invest in advanced training, develop expert-level skills across teams", "points": 10},
+            {"text": "Thought leadership, participate in industry events, open-source contributions", "points": 10}
           ]
         },
         {
           "prompt": "Name ways a customer's Container Management adoption maturity can be ASSESSED as level 3/Operational",
           "answers": [
-            {"text": "Applications are running in containers in production", "points": 5},
-            {"text": "OpenShift Platform Plus products (ACM, ACS) are being used", "points": 5},
-            {"text": "Automation around infrastructure operations", "points": 5},
-            {"text": "Teams have completed Red Hat training courses (DO280)", "points": 5},
-            {"text": "Internal teams cite container strategy as organizationally strategic", "points": 5}
+            {"text": "Applications are running in containers in production", "points": 10},
+            {"text": "OpenShift Platform Plus products (ACM, ACS) are being used", "points": 10},
+            {"text": "Automation around infrastructure operations", "points": 10},
+            {"text": "Teams have completed Red Hat training courses (DO280)", "points": 10},
+            {"text": "Internal teams cite container strategy as organizationally strategic", "points":10}
           ]
         },
         {
           "prompt": "For the App Platform TDP, what are things we can do to improve customers PROFICIENCY from level 1/Initial to level 2/Developing?",
           "answers": [
-            {"text": "Hands-on Developer Day workshops", "points": 5},
-            {"text": "Red Hat training courses (DO188 and DO288)", "points": 5},
-            {"text": "Launch Team engagement around pilot application", "points": 5},
-            {"text": "Red Hat consulting for assistance", "points": 5},
-            {"text": "Executive sponsorship (champion)", "points": 5},
-            {"text": "Use Red Hat build tools for early production apps", "points": 5}
+            {"text": "Hands-on Developer Day workshops", "points": 10},
+            {"text": "Red Hat training courses (DO188 and DO288)", "points": 10},
+            {"text": "Launch Team engagement around pilot application", "points": 10},
+            {"text": "Red Hat consulting for assistance", "points": 10},
+            {"text": "Executive sponsorship (champion)", "points": 10},
+            {"text": "Use Red Hat build tools for early production apps", "points":10}
           ]
         },
         {
           "prompt": "What are steps that can be taken for a customer in the INITIAL stages of Virtualization adoption maturity?",
           "answers": [
-            {"text": "OpenShift Virtualization adoption workshop to identify use cases", "points": 5},
-            {"text": "Assessment of feature parity with customer's previous hypervisor (i.e. VMware vSphere)", "points": 5},
-            {"text": "Red Hat training courses (DO316 and DO280)", "points": 5},
-            {"text": "Launch Team engagement to migrate pilot VM workload", "points": 5}
+            {"text": "OpenShift Virtualization adoption workshop to identify use cases", "points": 10},
+            {"text": "Assessment of feature parity with customer's previous hypervisor (i.e. VMware vSphere)", "points": 10},
+            {"text": "Red Hat training courses (DO316 and DO280)", "points": 10},
+            {"text": "Launch Team engagement to migrate pilot VM workload", "points": 10}
           ]
         }
       ]
     },
     {
-      "title": "Bonus Round: Greater Point Values",
+      "title": "Bonus Round",
       "questions": [
         {
           "prompt": "What metrics might you use to quantify a customer has reached Level 3/Operational maturity?",
           "answers": [
-            {"text": "# product entitlements purchased", "points": 5},
-            {"text": "# defined KPIs", "points": 5},
-            {"text": "% users trained", "points": 5},
-            {"text": "Customer Effort Score (CES)", "points": 5},
-            {"text": "% subscription units consumed", "points": 5},
-            {"text": "# tracked KPIs", "points": 5},
-            {"text": "% trained users demonstrating essential tasks", "points": 5},
-            {"text": "% increase in perceived value", "points": 5}
+            {"text": "# product entitlements purchased", "points": 10},
+            {"text": "# defined KPIs", "points": 10},
+            {"text": "% users trained", "points": 10},
+            {"text": "Customer Effort Score (CES)", "points": 10},
+            {"text": "% subscription units consumed", "points": 10},
+            {"text": "# tracked KPIs", "points": 10},
+            {"text": "% trained users demonstrating essential tasks", "points": 10},
+            {"text": "% increase in perceived value", "points": 10}
           ]
         }
       ]
     },
     {
-      "title": "BONUS TIE BREAKER ",
+      "title": "Tie Breaker",
+      "tiebreaker": true,
       "questions": [
         {
           "prompt": "In which cities has the Red Hat Summit previously been held?",
