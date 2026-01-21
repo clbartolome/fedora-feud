@@ -1,7 +1,7 @@
 {
   "rounds": [
     {
-      "title": "Round One: Warm Up",
+      "title": "Round One",
       "questions": [
         {
           "prompt": "Name the members of the CLT (Corporate Leadership Team) at Red Hat",
@@ -15,18 +15,19 @@
             {"text": "Ashesh Badani - Chief Product Officer", "points": 10},
             {"text": "Marco Bill - Chief Information Officer", "points": 10},
             {"text": "Jenn Dudeck - Chief People Officer", "points": 5},
-            {"text": "Tom Savage - SVP Legal Counsel", "points": 10}
+            {"text": "Tom Savage - SVP Legal Counsel", "points": 10},
+            {"text": "Stefanie Chiras - SVP, AI Innocation Hub", "points": 10}
           ]
         },
         {
           "prompt": "What are the 6 Technical Decision Points?",
           "answers": [
-            {"text": "Server Cloud", "points": 10},
+            {"text": "Server/Cloud Operating System", "points": 10},
             {"text": "Container Management", "points": 5},
             {"text": "Virtualization", "points": 5},
             {"text": "App Platform", "points": 5},
             {"text": "Automation", "points": 5},
-            {"text": "AI", "points": 10}
+            {"text": "AI Platform", "points": 10}
           ]
         },
         {
@@ -39,7 +40,7 @@
           ]
         },
         {
-          "prompt": "Name the 3 matricies per TDP",
+          "prompt": "Name the 3 types of matrices used in the Adoption process for Technical Decision Points (TDPs)?",
           "answers": [
             {"text": "Assess", "points": 5},
             {"text": "Measure", "points": 5},
@@ -47,7 +48,7 @@
           ]
         },
         {
-          "prompt": "What are the 5 stages of a Matrix?",
+          "prompt": "What are the 5 levels of Adoption within a Matrix?",
           "answers": [
             {"text": "Initial", "points": 5},
             {"text": "Developing", "points": 5},
@@ -62,7 +63,7 @@
       "title": "Round Two",
       "questions": [
         {
-          "prompt": "The customer just advanced from level 3/Operational to level 4/Optimizing. What are the 6 actions we took that align to the 4 dimentions? ",
+          "prompt": "The customer just advanced from level 3/Operational to level 4/Optimizing. What are the 6 actions we took that align with the 4 dimensions?",
           "answers": [
             {"text": "Increase feature adoption", "points": 5},
             {"text": "Automate deployments", "points": 5},
@@ -82,48 +83,41 @@
           ]
         },
         {
-          "prompt": "Your customer moved from level 1/Initial  to level 2/Developing. How did you ASSESS this?",
+          "prompt": "Name ways a customer's Container Management adoption maturity can be ASSESSED as level 3/Operational",
           "answers": [
-            {"text": "Limited usage across teams with early-stage implementation", "points": 5},
-            {"text": "The customer initiatives define KPIs and value is seen", "points": 5},
-            {"text": "Users can perform essential tasks", "points": 5},
-            {"text": "Perception of value improving and concerns remain", "points": 5}
+            {"text": "Applications are running in containers in production", "points": 5},
+            {"text": "OpenShift Platform Plus products (ACM, ACS) are being used", "points": 5},
+            {"text": "Automation around infrastructure operations", "points": 5},
+            {"text": "Teams have completed Red Hat training courses (DO280)", "points": 5},
+            {"text": "Internal teams cite container strategy as organizationally strategic", "points": 5}
           ]
         },
         {
-          "prompt": "Name 5 MGM hotels on the Vegas strip",
+          "prompt": "What metrics could you use to quantify a customer has reached Level 3/Operational maturity in Container Management?",
           "answers": [
-            {"text": "Bellagio", "points": 5},
+            {"text": "Applications migrated to OpenShift", "points": 5},
+            {"text": "Apps running on OpenShift", "points": 5},
+            {"text": "Clusters actively monitored (and optimized) ", "points": 5},
+            {"text": "Users with DO280/EX280", "points": 5},
+            {"text": "Users managing OpenShift clusters", "points": 5},
+            {"text": "Internal teams citing container strategy as organizationally strategic", "points": 5}
+          ]
+        },
+        {
+          "prompt": "Name 5 MGM hotels on the Vegas strip Red Hatters are staying at",
+          "answers": [
+            {"text": "Bellagio", "points": 10},
             {"text": "MGM Grand", "points": 5},
             {"text": "Park MGM", "points": 5},
-            {"text": "Aria", "points": 10},
-            {"text": "Cosmopolitan", "points": 10}
+            {"text": "New York New York", "points": 10},
+            {"text": "Signature MGM", "points": 5}
           ]
         }
       ]
     },
     {
-      "title": "Round Three",
+      "title": "Bonus Round",
       "questions": [
-        {
-          "prompt": "Your customer moved from level 2/Developing to level 3/Operational. How will you ADVANCE the customer to innovator?",
-          "answers": [
-            {"text": "Adopt latest releases, evaluate emerging capabilities", "points": 10},
-            {"text": "Continuously optimize, contribute industry best practices", "points": 10},
-            {"text": "Invest in advanced training, develop expert-level skills across teams", "points": 10},
-            {"text": "Thought leadership, participate in industry events, open-source contributions", "points": 10}
-          ]
-        },
-        {
-          "prompt": "Name ways a customer's Container Management adoption maturity can be ASSESSED as level 3/Operational",
-          "answers": [
-            {"text": "Applications are running in containers in production", "points": 10},
-            {"text": "OpenShift Platform Plus products (ACM, ACS) are being used", "points": 10},
-            {"text": "Automation around infrastructure operations", "points": 10},
-            {"text": "Teams have completed Red Hat training courses (DO280)", "points": 10},
-            {"text": "Internal teams cite container strategy as organizationally strategic", "points":10}
-          ]
-        },
         {
           "prompt": "For the App Platform TDP, what are things we can do to improve customers PROFICIENCY from level 1/Initial to level 2/Developing?",
           "answers": [
@@ -132,7 +126,7 @@
             {"text": "Launch Team engagement around pilot application", "points": 10},
             {"text": "Red Hat consulting for assistance", "points": 10},
             {"text": "Executive sponsorship (champion)", "points": 10},
-            {"text": "Use Red Hat build tools for early production apps", "points":10}
+            {"text": "Use Red Hat build tools for early production apps", "points": 10}
           ]
         },
         {
@@ -142,24 +136,6 @@
             {"text": "Assessment of feature parity with customer's previous hypervisor (i.e. VMware vSphere)", "points": 10},
             {"text": "Red Hat training courses (DO316 and DO280)", "points": 10},
             {"text": "Launch Team engagement to migrate pilot VM workload", "points": 10}
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Bonus Round",
-      "questions": [
-        {
-          "prompt": "What metrics might you use to quantify a customer has reached Level 3/Operational maturity?",
-          "answers": [
-            {"text": "# product entitlements purchased", "points": 10},
-            {"text": "# defined KPIs", "points": 10},
-            {"text": "% users trained", "points": 10},
-            {"text": "Customer Effort Score (CES)", "points": 10},
-            {"text": "% subscription units consumed", "points": 10},
-            {"text": "# tracked KPIs", "points": 10},
-            {"text": "% trained users demonstrating essential tasks", "points": 10},
-            {"text": "% increase in perceived value", "points": 10}
           ]
         }
       ]
