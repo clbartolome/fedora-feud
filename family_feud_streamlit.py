@@ -127,7 +127,7 @@ DEFAULT_QUESTIONS: List[Question] = [
     }
 ]
 
-def _clean_questions(raw_questions: Any, max_answers: int = 10) -> List[Question]:
+def _clean_questions(raw_questions: Any, max_answers: int = 15) -> List[Question]:
     if not isinstance(raw_questions, list):
         return []
     cleaned: List[Question] = []
@@ -178,6 +178,7 @@ def load_rounds_from_file(path: str) -> List[Round]:
         return [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
 
 ROUNDS: List[Round] = load_rounds_from_file("files/questions.json")
+
 HAS_LOGO = os.path.exists("fedora_feud.png")
 
 # ---------------------------------
@@ -186,6 +187,7 @@ HAS_LOGO = os.path.exists("fedora_feud.png")
 defaults = {
     "started": False,
     "finished": False,
+    "team_names": [],  # frozen team labels for the whole game
 
     # rounds
     "screen": "home",        # home | round_intro | question | results_wait| final
@@ -205,6 +207,8 @@ defaults = {
     "strike_nonce": 0,
     "strike_hide_at": 0.0,
     "tiebreaker_used": False,
+    "team_label_mode": "Letters",  # "Letters" | "Numbers"
+
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -214,8 +218,16 @@ for k, v in defaults.items():
 # Helpers
 # ---------------------------
 def team_labels(n: int) -> List[str]:
-    base = [chr(ord('A') + i) for i in range(26)]
-    return base[:n]
+    # If the game already started, use the frozen names
+    names = st.session_state.get("team_names", [])
+    if isinstance(names, list) and len(names) == n and all(isinstance(x, str) for x in names):
+        return names
+
+    # Otherwise (home / before start), compute preview labels
+    mode = str(st.session_state.get("team_label_mode", "letters")).strip().lower()
+    if mode.startswith("num"):
+        return [str(i + 1) for i in range(n)]
+    return [chr(ord("A") + i) for i in range(min(n, 26))]
 
 def clamp(n, mn, mx): return max(mn, min(n, mx))
 
@@ -259,7 +271,7 @@ def find_tiebreaker_round_index() -> Optional[int]:
 def ensure_state_for_current_question() -> QKey:
     rid: QKey = (st.session_state.round_index, st.session_state.q_in_round)
     q = current_question()
-    n_answers = clamp(len(q.get("answers", [])), 1, 10)
+    n_answers = clamp(len(q.get("answers", [])), 1, 15)
 
     if rid not in st.session_state.revealed_map:
         st.session_state.revealed_map[rid] = [False] * n_answers
@@ -279,6 +291,8 @@ def ensure_state_for_current_question() -> QKey:
 
 def start_game(num_teams: int):
     st.session_state.num_teams = clamp(int(num_teams), 1, 15)
+    
+    st.session_state.team_names = team_labels(st.session_state.num_teams)
     st.session_state.team_scores = [0] * st.session_state.num_teams
 
     st.session_state.round_index = 0
@@ -405,6 +419,12 @@ if not st.session_state.started and not st.session_state.finished:
             key="teams_select"
         )
         st.write("")
+        label_mode = st.selectbox(
+            "Team labels",
+            options=["Letters", "Numbers"],
+            key="team_label_mode",
+            help="Choose how teams are displayed (A/B/C… or 1/2/3…).",
+        )
         st.button("🚀 Start", use_container_width=True, on_click=start_game, args=(teams,))
     st.stop()
 
