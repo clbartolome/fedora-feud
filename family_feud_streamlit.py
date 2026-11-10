@@ -265,9 +265,390 @@ def has_sales_assistance(q: Question) -> bool:
         return False
     return True
 
-@st.dialog("Sales Assistant")
-def sales_assistant_placeholder() -> None:
-    st.write("in progress")
+def _sales_assistant_html(prompt: str) -> str:
+    prompt_js = json.dumps(prompt).replace("<", "\\u003c").replace(">", "\\u003e")
+    return _SALES_ASSISTANT_HTML.replace("__PROMPT_JSON__", prompt_js)
+
+def mount_sales_assistant_helper(prompt: str) -> None:
+    st.components.v1.html(_sales_assistant_html(prompt), height=0)
+
+_SALES_ASSISTANT_HTML = r"""
+<style id="sa-css">
+  #ff-sa-overlay {
+    position: fixed; inset: 0; z-index: 20000;
+    background: rgba(8, 16, 32, .55);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: #161616;
+    color-scheme: light;
+  }
+  #ff-sa-overlay * { box-sizing: border-box; }
+  .ff-sa-window {
+    width: min(1120px, 94vw);
+    height: min(740px, calc(100vh - 24px));
+    background: #fff !important;
+    color: #161616 !important;
+    border-radius: 10px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.35);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .ff-sa-top {
+    height: 48px; flex: 0 0 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px 0 16px;
+    background: #f7f7f8;
+    border-bottom: 2px solid #0f62fe;
+    color: #161616;
+    font-size: 14px; font-weight: 500;
+  }
+  .ff-sa-top-left, .ff-sa-top-right { display: flex; align-items: center; gap: 8px; }
+  .ff-sa-iconbtn {
+    width: 28px; height: 28px; border: 0; background: transparent;
+    color: #525252; cursor: pointer; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ff-sa-iconbtn:hover { background: #e8e8e8; color: #161616; }
+  .ff-sa-body { flex: 1; min-height: 0; display: flex; background: #fff; }
+  .ff-sa-rail {
+    width: 56px; flex: 0 0 56px;
+    background: #f4f4f4;
+    border-right: 1px solid #e0e0e0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0 10px;
+  }
+  .ff-sa-rail-top { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+  .ff-sa-rail-btn {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #6f6f6f;
+  }
+  .ff-sa-rail-btn.active { background: #e6e6e6; color: #161616; }
+  .ff-sa-rail-btn.red { color: #da1e28; }
+  .ff-sa-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #c6c6c6; color: #161616;
+    font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ff-sa-main {
+    flex: 1; min-width: 0; min-height: 0;
+    display: flex; flex-direction: column;
+    position: relative;
+    background: #fff;
+  }
+  .ff-sa-help {
+    position: absolute; top: 16px; right: 22px;
+    display: flex; align-items: center; gap: 6px;
+    color: #6f6f6f; font-size: 14px;
+  }
+  .ff-sa-hero {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 28px 48px 10px;
+    overflow-y: auto;
+  }
+  .ff-sa-hello {
+    margin: 0 0 8px !important;
+    padding: 0 !important;
+    font-size: clamp(28px, 5vh, 42px) !important;
+    font-weight: 600 !important;
+    letter-spacing: -.03em;
+    color: #161616 !important;
+    text-align: center;
+    line-height: 1.15 !important;
+  }
+  .ff-sa-sub {
+    margin: 0 0 18px; max-width: 460px;
+    font-size: 16px; line-height: 1.45; color: #6f6f6f; text-align: center;
+  }
+  .ff-sa-chips {
+    width: min(720px, 100%);
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .ff-sa-chip {
+    background: #f4f4f4; border: 1px solid #ececec; border-radius: 18px;
+    padding: 12px 16px; font-size: 14.5px; color: #161616;
+  }
+  .ff-sa-skills-head {
+    width: min(720px, 100%);
+    display: flex; justify-content: space-between; align-items: center;
+    color: #6f6f6f; font-size: 14px; margin-bottom: 14px;
+  }
+  .ff-sa-see { display: inline-flex; align-items: center; gap: 6px; }
+  .ff-sa-skills {
+    width: min(720px, 100%);
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  }
+  .ff-sa-skill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 999px;
+    padding: 8px 14px; font-size: 13.5px; color: #161616;
+  }
+  .ff-sa-footer { padding: 8px 28px 18px; }
+  .ff-sa-composer {
+    border: 1px solid #e0e0e0; border-radius: 16px;
+    min-height: 118px; padding: 16px 16px 12px;
+    display: flex; flex-direction: column; gap: 18px;
+    background: #fff;
+  }
+  .ff-sa-typed-wrap {
+    min-height: 44px; font-size: 15.5px; line-height: 1.5; color: #161616;
+    pointer-events: none; user-select: none;
+  }
+  .ff-sa-placeholder { color: #8d8d8d; }
+  .ff-sa-caret {
+    display: none; width: 1.5px; height: 1.05em;
+    background: #161616; margin-left: 1px; vertical-align: -3px;
+    animation: ffSaBlink 1s step-end infinite;
+  }
+  .ff-sa-caret.on { display: inline-block; }
+  @keyframes ffSaBlink { 50% { opacity: 0; } }
+  .ff-sa-tools { display: flex; align-items: center; gap: 8px; }
+  .ff-sa-tools span {
+    width: 28px; height: 28px; color: #6f6f6f;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ff-sa-send {
+    margin-left: auto; width: 36px; height: 36px; border: 0; border-radius: 50%;
+    background: #0f62fe; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .ff-sa-disclaimer { margin: 8px 2px 0; font-size: 12px; color: #8d8d8d; }
+  .ff-sa-feedback {
+    position: absolute; right: 0; top: 46%;
+    background: #161616; color: #fff; font-size: 12px; letter-spacing: .04em;
+    padding: 10px 6px; border-radius: 6px 0 0 6px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+  }
+</style>
+<template id="sa-html">
+  <div class="ff-sa-window" role="dialog" aria-label="Sales Assistant">
+    <div class="ff-sa-top">
+      <div class="ff-sa-top-left">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="#161616" stroke-width="1.4"/>
+          <path d="M8 5v6M5 8h6" stroke="#161616" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Sales Assistant
+      </div>
+      <div class="ff-sa-top-right">
+        <span class="ff-sa-iconbtn" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8a1.5 1.5 0 0 0 1.5-1.5V10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M9 2h5v5M14 2 8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <button type="button" class="ff-sa-iconbtn ff-sa-close" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="ff-sa-body">
+      <aside class="ff-sa-rail">
+        <div class="ff-sa-rail-top">
+          <div class="ff-sa-rail-btn red">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="#da1e28"><path d="M2 8.2 9 2.5 16 8.2V16H11v-5H7v5H2V8.2z"/></svg>
+          </div>
+          <div class="ff-sa-rail-btn active">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5v7A1.5 1.5 0 0 1 13.5 13H7l-3.5 2.5V4.5z" stroke="currentColor" stroke-width="1.4"/>
+            </svg>
+          </div>
+          <div class="ff-sa-rail-btn">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2.5" y="3" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="10.5" y="3" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="2.5" y="10.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="10.5" y="10.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            </svg>
+          </div>
+          <div class="ff-sa-rail-btn">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 2.5l1.6 3.6 4 .4-3 2.8.9 3.9L9 11.4 5.5 13.2l.9-3.9-3-2.8 4-.4L9 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="ff-sa-rail-btn">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="8" cy="8" r="5.2" stroke="currentColor" stroke-width="1.4"/>
+              <path d="m12 12 3.2 3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ff-sa-avatar">FF</div>
+      </aside>
+      <section class="ff-sa-main">
+        <div class="ff-sa-help">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M6.4 6.2a1.7 1.7 0 1 1 2.4 1.55c-.5.3-.8.7-.8 1.25V9.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <circle cx="8" cy="11.4" r=".7" fill="currentColor"/>
+          </svg>
+          Help
+        </div>
+        <div class="ff-sa-hero">
+          <div class="ff-sa-hello">Hey Fedora Feud! 👋</div>
+          <div class="ff-sa-sub">Sales Assistant is ready to help. What would you like to explore today?</div>
+          <div class="ff-sa-chips">
+            <div class="ff-sa-chip">How do I create a private offer?</div>
+            <div class="ff-sa-chip">Help me prepare for my next meeting</div>
+            <div class="ff-sa-chip">What's new in the latest sales play?</div>
+          </div>
+          <div class="ff-sa-skills-head">
+            <span>Or try a skill from the library</span>
+            <span class="ff-sa-see">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor"/>
+                <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor"/>
+                <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor"/>
+                <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor"/>
+              </svg>
+              See all skills
+            </span>
+          </div>
+          <div class="ff-sa-skills">
+            <div class="ff-sa-skill"><span style="color:#0f62fe">📅</span> Meeting Prep</div>
+            <div class="ff-sa-skill"><span style="color:#c43e1c">⚠️</span> Deal Risk</div>
+            <div class="ff-sa-skill"><span style="color:#b28600">📄</span> Create Quote</div>
+            <div class="ff-sa-skill"><span style="color:#0e7c7b">🔄</span> Renewal</div>
+            <div class="ff-sa-skill"><span style="color:#4589ff">🗂️</span> Value Brief</div>
+          </div>
+        </div>
+        <div class="ff-sa-footer">
+          <div class="ff-sa-composer">
+            <div class="ff-sa-typed-wrap">
+              <span class="ff-sa-placeholder" id="saPlaceholder">Ask anything about your accounts, products, or plans ( / for skills and prompts, @ for accounts )</span>
+              <span id="saTyped"></span><span class="ff-sa-caret" id="saCaret"></span>
+            </div>
+            <div class="ff-sa-tools">
+              <span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2.2 9.5 6l4 .4-3 2.7.9 3.9L8 10.9 4.6 13l.9-3.9-3-2.7 4-.4L8 2.2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <div class="ff-sa-send" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 12 12 4M6.5 4H12v5.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="ff-sa-disclaimer">AI can be wrong. Verify critical information before acting.</div>
+        </div>
+        <div class="ff-sa-feedback">Feedback</div>
+      </section>
+    </div>
+  </div>
+</template>
+<script type="application/json" id="sa-prompt">__PROMPT_JSON__</script>
+<script>
+(function () {
+  const doc = window.parent.document;
+  const prompt = JSON.parse(document.getElementById("sa-prompt").textContent);
+  const css = document.getElementById("sa-css").textContent;
+  const html = document.getElementById("sa-html").innerHTML;
+  const parentWin = window.parent;
+
+  parentWin.__ffSaPrompt = prompt;
+  parentWin.__ffSaCss = css;
+  parentWin.__ffSaHtml = html;
+
+  function ensureFont() {
+    if (doc.getElementById("ff-sa-font")) return;
+    const font = doc.createElement("link");
+    font.id = "ff-sa-font";
+    font.rel = "stylesheet";
+    font.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap";
+    doc.head.appendChild(font);
+  }
+
+  function closeOverlay() {
+    const wrap = doc.getElementById("ff-sa-overlay");
+    if (wrap) wrap.remove();
+    const style = doc.getElementById("ff-sa-style");
+    if (style) style.remove();
+    doc.removeEventListener("keydown", onEscape, true);
+  }
+
+  function onEscape(evt) {
+    if (evt.key === "Escape") closeOverlay();
+  }
+
+  function startTypewriter(wrap, text) {
+    const typed = wrap.querySelector("#saTyped");
+    const placeholder = wrap.querySelector("#saPlaceholder");
+    const caret = wrap.querySelector("#saCaret");
+    if (!typed || !text) return;
+    let i = 0;
+    const tick = function () {
+      if (placeholder) placeholder.style.display = "none";
+      if (caret) caret.classList.add("on");
+      typed.textContent = text.slice(0, i);
+      i += 1;
+      if (i <= text.length) parentWin.setTimeout(tick, 34);
+    };
+    parentWin.setTimeout(tick, 650);
+  }
+
+  function openSalesAssistant(text) {
+    const promptText = text || parentWin.__ffSaPrompt || "";
+    closeOverlay();
+    ensureFont();
+
+    let style = doc.getElementById("ff-sa-style");
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "ff-sa-style";
+      doc.head.appendChild(style);
+    }
+    style.textContent = parentWin.__ffSaCss || css;
+
+    const wrap = doc.createElement("div");
+    wrap.id = "ff-sa-overlay";
+    wrap.innerHTML = parentWin.__ffSaHtml || html;
+    doc.body.appendChild(wrap);
+
+    doc.addEventListener("keydown", onEscape, true);
+    wrap.addEventListener("click", function (evt) {
+      if (evt.target === wrap) closeOverlay();
+    });
+    const closeBtn = wrap.querySelector(".ff-sa-close");
+    if (closeBtn) closeBtn.addEventListener("click", closeOverlay);
+
+    startTypewriter(wrap, promptText);
+  }
+
+  parentWin.__ffOpenSalesAssistant = openSalesAssistant;
+  parentWin.__ffCloseSalesAssistant = closeOverlay;
+
+  if (!parentWin.__ffSaClickBound) {
+    parentWin.__ffSaClickBound = true;
+    doc.addEventListener("click", function (evt) {
+      const btn = evt.target.closest("button");
+      if (!btn) return;
+      if (btn.closest("#ff-sa-overlay")) return;
+      const label = (btn.innerText || btn.textContent || "");
+      if (!label.includes("Sales Assistant")) return;
+      evt.preventDefault();
+      evt.stopPropagation();
+      if (typeof parentWin.__ffOpenSalesAssistant === "function") {
+        parentWin.__ffOpenSalesAssistant(parentWin.__ffSaPrompt);
+      }
+    }, true);
+  }
+})();
+</script>
+"""
 
 def current_round() -> Round:
     return ROUNDS[st.session_state.round_index]
@@ -620,19 +1001,21 @@ st.divider()
 if has_sales_assistance(q):
     sa_col, _empt, strike_col = st.columns([3, 9, 1])
     with sa_col:
-        if st.button(
+        st.button(
             "Sales Assistant ↗",
             icon=":material/add_box:",
             type="primary",
             key=f"sales_assist_{rid[0]}_{rid[1]}",
-        ):
-            sales_assistant_placeholder()
+        )
     with strike_col:
         st.button("❌", key="strike_btn", on_click=trigger_strike)
 else:
     _empt, strike_col = st.columns([12, 1])
     with strike_col:
         st.button("❌", key="strike_btn", on_click=trigger_strike)
+
+if has_sales_assistance(q):
+    mount_sales_assistant_helper(q["prompt"])
 
 st.components.v1.html(
     """
@@ -650,6 +1033,8 @@ st.components.v1.html(
         const el = doc.activeElement;
         const tag = el ? el.tagName : "";
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+        if (doc.getElementById("ff-sa-overlay")) return;
 
         if (evt.key === "e" || evt.key === "E") {
           // Find the ❌ button and click it
