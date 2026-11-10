@@ -5,6 +5,7 @@
       "questions": [
         {
           "prompt": "Name the members of the CLT (Corporate Leadership Team) at Red Hat",
+          "sales_assistance": true,
           "answers": [
             {"text": "Matt Hicks - Chief Executive Officer", "points": 5},
             {"text": "Michael Ferris - Chief Strategy Officer", "points": 5},
@@ -64,6 +65,7 @@
       "questions": [
         {
           "prompt": "The customer just advanced from level 3/Operational to level 4/Optimizing. What are the 6 actions we took that align with the 4 dimensions?",
+          "sales_assistance": true,
           "answers": [
             {"text": "Increase feature adoption", "points": 5},
             {"text": "Automate deployments", "points": 5},
@@ -120,6 +122,7 @@
       "questions": [
         {
           "prompt": "For the App Platform TDP, what are things we can do to improve customers PROFICIENCY from level 1/Initial to level 2/Developing?",
+          "sales_assistance": true,
           "answers": [
             {"text": "Hands-on Developer Day workshops", "points": 10},
             {"text": "Red Hat training courses (DO188 and DO288)", "points": 10},

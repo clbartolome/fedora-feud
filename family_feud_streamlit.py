@@ -56,6 +56,29 @@ CUSTOM_CSS = """
   .stButton>button:hover { filter: brightness(1.07) }
   .stButton>button:active { transform: translateY(1px) }
 
+  /* Sales Assistant chip (primary button only) */
+  .stButton>button[kind="primary"],
+  [data-testid="stBaseButton-primary"] {
+    border-radius: 999px !important;
+    padding: 8px 14px 8px 12px !important;
+    min-width: unset !important;
+    height: auto !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: .2px;
+    background: rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(247, 182, 18, 0.55) !important;
+    color: rgba(255,255,255,0.96) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(6px);
+  }
+  .stButton>button[kind="primary"]:hover,
+  [data-testid="stBaseButton-primary"]:hover {
+    background: rgba(247, 182, 18, 0.22) !important;
+    border-color: rgba(247, 182, 18, 0.85) !important;
+    filter: none;
+  }
+
   .ff-toolbar { display:flex; gap:10px; align-items:center; white-space:nowrap; overflow-x:auto; padding:.25rem .25rem; }
   .ff-pill { display:inline-flex; align-items:center; gap:8px; backdrop-filter:blur(6px); background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:999px; padding:6px 10px; }
   .ff-pill .lbl { font-weight:700 }
@@ -137,10 +160,13 @@ def _clean_questions(raw_questions: Any, max_answers: int = 15) -> List[Question
         prompt = q.get("prompt")
         answers = q.get("answers", [])
         if isinstance(prompt, str) and isinstance(answers, list) and 1 <= len(answers) <= max_answers:
-            cleaned.append({
+            item: Question = {
                 "prompt": prompt,
                 "answers": [{"text": str(a.get("text", "")), "points": int(a.get("points", 0))} for a in answers if isinstance(a, dict)],
-            })
+            }
+            if "sales_assistance" in q:
+                item["sales_assistance"] = q.get("sales_assistance")
+            cleaned.append(item)
     return cleaned
 
 def load_rounds_from_file(path: str) -> List[Round]:
@@ -230,6 +256,18 @@ def team_labels(n: int) -> List[str]:
     return [chr(ord("A") + i) for i in range(min(n, 26))]
 
 def clamp(n, mn, mx): return max(mn, min(n, mx))
+
+def has_sales_assistance(q: Question) -> bool:
+    val = q.get("sales_assistance")
+    if val in (None, False, "", 0):
+        return False
+    if isinstance(val, str) and not val.strip():
+        return False
+    return True
+
+@st.dialog("Sales Assistant")
+def sales_assistant_placeholder() -> None:
+    st.write("in progress")
 
 def current_round() -> Round:
     return ROUNDS[st.session_state.round_index]
@@ -578,10 +616,23 @@ with head_right:
 
 st.divider()
 
-# Strike (button aligned to the right)
-_empt, strike_col = st.columns([12, 1])
-with strike_col:
-    st.button("❌", key="strike_btn", on_click=trigger_strike)
+# Strike (button aligned to the right) + optional Sales Assistant
+if has_sales_assistance(q):
+    sa_col, _empt, strike_col = st.columns([3, 9, 1])
+    with sa_col:
+        if st.button(
+            "Sales Assistant ↗",
+            icon=":material/add_box:",
+            type="primary",
+            key=f"sales_assist_{rid[0]}_{rid[1]}",
+        ):
+            sales_assistant_placeholder()
+    with strike_col:
+        st.button("❌", key="strike_btn", on_click=trigger_strike)
+else:
+    _empt, strike_col = st.columns([12, 1])
+    with strike_col:
+        st.button("❌", key="strike_btn", on_click=trigger_strike)
 
 st.components.v1.html(
     """
