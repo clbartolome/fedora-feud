@@ -265,12 +265,38 @@ def has_sales_assistance(q: Question) -> bool:
         return False
     return True
 
-def _sales_assistant_html(prompt: str) -> str:
-    prompt_js = json.dumps(prompt).replace("<", "\\u003c").replace(">", "\\u003e")
-    return _SALES_ASSISTANT_HTML.replace("__PROMPT_JSON__", prompt_js)
+def load_sales_assistance_markdown(ref: Any) -> str:
+    if not isinstance(ref, str):
+        return ""
+    rel = ref.strip().lstrip("/")
+    if not rel:
+        return ""
+    candidates = [
+        os.path.join("files", rel),
+        rel,
+        os.path.join("files", "sales_assistance", os.path.basename(rel)),
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    return fh.read()
+            except OSError:
+                return ""
+    return ""
 
-def mount_sales_assistant_helper(prompt: str) -> None:
-    st.components.v1.html(_sales_assistant_html(prompt), height=0)
+def _json_for_script(value: str) -> str:
+    return json.dumps(value).replace("<", "\\u003c").replace(">", "\\u003e")
+
+def _sales_assistant_html(prompt: str, answer_md: str = "") -> str:
+    return (
+        _SALES_ASSISTANT_HTML
+        .replace("__PROMPT_JSON__", _json_for_script(prompt))
+        .replace("__ANSWER_JSON__", _json_for_script(answer_md))
+    )
+
+def mount_sales_assistant_helper(prompt: str, answer_md: str = "") -> None:
+    st.components.v1.html(_sales_assistant_html(prompt, answer_md), height=0)
 
 _SALES_ASSISTANT_HTML = r"""
 <style id="sa-css">
@@ -424,6 +450,63 @@ _SALES_ASSISTANT_HTML = r"""
     padding: 10px 6px; border-radius: 6px 0 0 6px;
     writing-mode: vertical-rl; transform: rotate(180deg);
   }
+  .ff-sa-chat {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 36px 52px 40px;
+  }
+  .ff-sa-main.is-chat .ff-sa-hero,
+  .ff-sa-main.is-chat .ff-sa-footer { display: none !important; }
+  .ff-sa-main.is-chat .ff-sa-chat { display: block; }
+  .ff-sa-user-bubble {
+    max-width: 680px;
+    margin: 8px auto 28px;
+    background: #f4f4f4;
+    border-radius: 18px;
+    padding: 14px 20px;
+    font-size: 15.5px;
+    line-height: 1.45;
+    color: #161616;
+  }
+  .ff-sa-thinking {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    color: #6f6f6f;
+    font-size: 14.5px;
+    margin: 4px 0 18px;
+  }
+  .ff-sa-thinking.on { display: flex; }
+  .ff-sa-thinking-icon { animation: ffSaPulse 1.1s ease-in-out infinite; }
+  @keyframes ffSaPulse {
+    0%, 100% { opacity: .4; }
+    50% { opacity: 1; }
+  }
+  .ff-sa-thinking-caret { opacity: .7; font-size: 11px; }
+  .ff-sa-answer {
+    max-width: 760px;
+    color: #161616 !important;
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+  .ff-sa-answer h1, .ff-sa-answer h2, .ff-sa-answer h3 {
+    color: #161616 !important;
+    font-weight: 600 !important;
+    margin: 1.35em 0 .55em;
+    line-height: 1.3 !important;
+    font-size: 1.15rem !important;
+  }
+  .ff-sa-answer h2 { font-size: 1.22rem !important; }
+  .ff-sa-answer p { margin: 0 0 .85em; }
+  .ff-sa-answer ul { margin: 0 0 1em; padding-left: 1.25em; }
+  .ff-sa-answer li { margin: .28em 0; }
+  .ff-sa-answer li.nested { margin-left: 1.1em; }
+  .ff-sa-answer strong { font-weight: 600; }
+  .ff-sa-answer em { font-style: italic; }
+  .ff-sa-answer a { color: #0f62fe; text-decoration: none; }
+  .ff-sa-answer hr { border: 0; border-top: 1px solid #e0e0e0; margin: 1.4em 0; }
 </style>
 <template id="sa-html">
   <div class="ff-sa-window" role="dialog" aria-label="Sales Assistant">
@@ -519,6 +602,17 @@ _SALES_ASSISTANT_HTML = r"""
             <div class="ff-sa-skill"><span style="color:#4589ff">🗂️</span> Value Brief</div>
           </div>
         </div>
+        <div class="ff-sa-chat" id="saChat">
+          <div class="ff-sa-user-bubble" id="saUserBubble"></div>
+          <div class="ff-sa-thinking" id="saThinking">
+            <svg class="ff-sa-thinking-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 1.2 8.9 6.1 14 7.2 8.9 8.3 8 13.2 7.1 8.3 2 7.2 7.1 6.1z"/>
+            </svg>
+            Thinking...
+            <span class="ff-sa-thinking-caret">⌃</span>
+          </div>
+          <div class="ff-sa-answer" id="saAnswer"></div>
+        </div>
         <div class="ff-sa-footer">
           <div class="ff-sa-composer">
             <div class="ff-sa-typed-wrap">
@@ -551,17 +645,35 @@ _SALES_ASSISTANT_HTML = r"""
   </div>
 </template>
 <script type="application/json" id="sa-prompt">__PROMPT_JSON__</script>
+<script type="application/json" id="sa-answer">__ANSWER_JSON__</script>
 <script>
 (function () {
   const doc = window.parent.document;
   const prompt = JSON.parse(document.getElementById("sa-prompt").textContent);
+  const answerMd = JSON.parse(document.getElementById("sa-answer").textContent);
   const css = document.getElementById("sa-css").textContent;
   const html = document.getElementById("sa-html").innerHTML;
   const parentWin = window.parent;
 
   parentWin.__ffSaPrompt = prompt;
+  parentWin.__ffSaAnswer = answerMd;
   parentWin.__ffSaCss = css;
   parentWin.__ffSaHtml = html;
+  parentWin.__ffSaTimers = parentWin.__ffSaTimers || [];
+
+  function later(fn, ms) {
+    const id = parentWin.setTimeout(function () {
+      if (!doc.getElementById("ff-sa-overlay")) return;
+      fn();
+    }, ms);
+    parentWin.__ffSaTimers.push(id);
+    return id;
+  }
+
+  function clearSaTimers() {
+    (parentWin.__ffSaTimers || []).forEach(function (id) { parentWin.clearTimeout(id); });
+    parentWin.__ffSaTimers = [];
+  }
 
   function ensureFont() {
     if (doc.getElementById("ff-sa-font")) return;
@@ -573,6 +685,7 @@ _SALES_ASSISTANT_HTML = r"""
   }
 
   function closeOverlay() {
+    clearSaTimers();
     const wrap = doc.getElementById("ff-sa-overlay");
     if (wrap) wrap.remove();
     const style = doc.getElementById("ff-sa-style");
@@ -582,6 +695,78 @@ _SALES_ASSISTANT_HTML = r"""
 
   function onEscape(evt) {
     if (evt.key === "Escape") closeOverlay();
+  }
+
+  function inlineFmt(text) {
+    let t = String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    t = t.replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    t = t.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    return t;
+  }
+
+  function renderMarkdown(md) {
+    const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+    let out = "";
+    let inList = false;
+    function closeList() {
+      if (inList) { out += "</ul>"; inList = false; }
+    }
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*$/.test(line)) { closeList(); continue; }
+      const heading = line.match(/^(#{1,3})\s+(.*)$/);
+      if (heading) {
+        closeList();
+        const n = heading[1].length;
+        out += "<h" + n + ">" + inlineFmt(heading[2]) + "</h" + n + ">";
+        continue;
+      }
+      if (/^\s*---+\s*$/.test(line)) { closeList(); out += "<hr>"; continue; }
+      const li = line.match(/^(\s*)[-*]\s+(.*)$/);
+      if (li) {
+        if (!inList) { out += "<ul>"; inList = true; }
+        const nested = li[1].length >= 2 ? ' class="nested"' : "";
+        out += "<li" + nested + ">" + inlineFmt(li[2]) + "</li>";
+        continue;
+      }
+      closeList();
+      out += "<p>" + inlineFmt(line) + "</p>";
+    }
+    closeList();
+    return out;
+  }
+
+  function streamAnswer(wrap, md) {
+    const el = wrap.querySelector("#saAnswer");
+    const chat = wrap.querySelector("#saChat");
+    if (!el || !md) return;
+    const tokens = md.split(/(\s+)/);
+    let n = 0;
+    const step = function () {
+      n += 3;
+      if (n > tokens.length) n = tokens.length;
+      el.innerHTML = renderMarkdown(tokens.slice(0, n).join(""));
+      if (chat) chat.scrollTop = chat.scrollHeight;
+      if (n < tokens.length) later(step, 24);
+    };
+    step();
+  }
+
+  function enterChat(wrap, question) {
+    const main = wrap.querySelector(".ff-sa-main");
+    const bubble = wrap.querySelector("#saUserBubble");
+    const thinking = wrap.querySelector("#saThinking");
+    if (bubble) bubble.textContent = question;
+    if (main) main.classList.add("is-chat");
+    if (thinking) thinking.classList.add("on");
+    later(function () {
+      if (thinking) thinking.classList.remove("on");
+      streamAnswer(wrap, parentWin.__ffSaAnswer || "");
+    }, 2000);
   }
 
   function startTypewriter(wrap, text) {
@@ -595,9 +780,13 @@ _SALES_ASSISTANT_HTML = r"""
       if (caret) caret.classList.add("on");
       typed.textContent = text.slice(0, i);
       i += 1;
-      if (i <= text.length) parentWin.setTimeout(tick, 34);
+      if (i <= text.length) {
+        later(tick, 34);
+      } else if (parentWin.__ffSaAnswer) {
+        later(function () { enterChat(wrap, text); }, 400);
+      }
     };
-    parentWin.setTimeout(tick, 650);
+    later(tick, 650);
   }
 
   function openSalesAssistant(text) {
@@ -1015,7 +1204,10 @@ else:
         st.button("❌", key="strike_btn", on_click=trigger_strike)
 
 if has_sales_assistance(q):
-    mount_sales_assistant_helper(q["prompt"])
+    mount_sales_assistant_helper(
+        q["prompt"],
+        load_sales_assistance_markdown(q.get("sales_assistance")),
+    )
 
 st.components.v1.html(
     """

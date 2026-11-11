@@ -5,7 +5,7 @@
       "questions": [
         {
           "prompt": "Name the members of the CLT (Corporate Leadership Team) at Red Hat",
-          "sales_assistance": true,
+          "sales_assistance": "sales_assistance/question_1.md",
           "answers": [
             {"text": "Matt Hicks - Chief Executive Officer", "points": 5},
             {"text": "Michael Ferris - Chief Strategy Officer", "points": 5},
