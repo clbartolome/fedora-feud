@@ -78,26 +78,30 @@ http://localhost:8501
 
 ## 🧾 Questions File Format
 
-The `questions.json` file defines the quiz content.  
-Each question has a **prompt** and a list of **answers** with point values.
+The `files/questions.json` file defines the quiz as a list of rounds.  
+Each round has a **title** and **questions**. Each question has a **prompt** and a list of **answers** with point values. Rounds play in order from first to last.
 
 ```json
-[
-  {
-    "prompt": "Name something people double-check before leaving home",
-    "answers": [
-      {"text": "Keys", "points": 32},
-      {"text": "Phone", "points": 27},
-      {"text": "Wallet", "points": 18},
-      {"text": "Lights off", "points": 9},
-      {"text": "Door locked", "points": 8},
-      {"text": "Stove/Gas", "points": 6}
-    ]
-  }
-]
+{
+  "rounds": [
+    {
+      "title": "Round 1",
+      "questions": [
+        {
+          "prompt": "Name something people double-check before leaving home",
+          "answers": [
+            {"text": "Keys", "points": 32},
+            {"text": "Phone", "points": 27},
+            {"text": "Wallet", "points": 18}
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
 
-You can add as many questions as you like!
+You can add as many rounds and questions as you like.
 
 ---
 

@@ -4,6 +4,7 @@ import json
 import os
 import base64
 import time
+import hashlib
 
 st.set_page_config(page_title="Fedora Feud", page_icon="❓", layout="wide")
 
@@ -126,6 +127,11 @@ CUSTOM_CSS = """
     color: white !important;
     font-weight: 600 !important;
   }
+
+  /* Keep Streamlit errors readable on the navy background */
+  [data-testid="stException"], [data-testid="stAlert"] {
+    color: #fff !important;
+  }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -188,11 +194,7 @@ def load_rounds_from_file(path: str) -> List[Round]:
                 title = r.get("title", "Round")
                 questions = _clean_questions(r.get("questions", []))
                 if isinstance(title, str) and questions:
-                    rounds.append({
-                        "title": title,
-                        "questions": questions,
-                        "tiebreaker": bool(r.get("tiebreaker", False)),
-                    })
+                    rounds.append({"title": title, "questions": questions})
             return rounds or [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
 
         if isinstance(data, list):
@@ -203,7 +205,17 @@ def load_rounds_from_file(path: str) -> List[Round]:
     except Exception:
         return [{"title": "Round 1", "questions": DEFAULT_QUESTIONS}]
 
-ROUNDS: List[Round] = load_rounds_from_file("files/questions.json")
+QUESTIONS_PATH = "files/questions.json"
+
+def _questions_fingerprint(path: str) -> str:
+    try:
+        with open(path, "rb") as fh:
+            return hashlib.md5(fh.read()).hexdigest()
+    except OSError:
+        return ""
+
+ROUNDS: List[Round] = load_rounds_from_file(QUESTIONS_PATH)
+QUESTIONS_FP = _questions_fingerprint(QUESTIONS_PATH)
 
 HAS_LOGO = os.path.exists("fedora_feud.png")
 
@@ -232,7 +244,6 @@ defaults = {
     "show_strike": False,
     "strike_nonce": 0,
     "strike_hide_at": 0.0,
-    "tiebreaker_used": False,
     "team_label_mode": "Letters",  # "Letters" | "Numbers"
 
 }
@@ -840,41 +851,26 @@ _SALES_ASSISTANT_HTML = r"""
 """
 
 def current_round() -> Round:
-    return ROUNDS[st.session_state.round_index]
+    n = len(ROUNDS)
+    idx = int(st.session_state.get("round_index", 0) or 0)
+    if n and not 0 <= idx < n:
+        idx = 0
+        st.session_state.round_index = 0
+        st.session_state.q_in_round = 0
+    return ROUNDS[idx]
 
 def round_questions() -> List[Question]:
     return current_round().get("questions", [])
 
 def current_question() -> Question:
-    return round_questions()[st.session_state.q_in_round]
+    qs = round_questions()
+    idx = int(st.session_state.get("q_in_round", 0) or 0)
+    if qs and not 0 <= idx < len(qs):
+        idx = 0
+        st.session_state.q_in_round = 0
+    return qs[idx]
 
 QKey = Tuple[int, int]
-
-def is_tiebreaker_round(idx: int) -> bool:
-    return bool(ROUNDS[idx].get("tiebreaker", False))
-
-def last_normal_round_index() -> int:
-    normal_idxs = [i for i in range(len(ROUNDS)) if not is_tiebreaker_round(i)]
-    return normal_idxs[-1] if normal_idxs else 0
-
-def next_normal_round_index(cur: int) -> Optional[int]:
-    for i in range(cur + 1, len(ROUNDS)):
-        if not is_tiebreaker_round(i):
-            return i
-    return None
-
-def top_is_tied() -> bool:
-    scores = st.session_state.team_scores
-    if not scores:
-        return False
-    best = max(scores)
-    return sum(1 for s in scores if s == best) >= 2
-
-def find_tiebreaker_round_index() -> Optional[int]:
-    for idx, r in enumerate(ROUNDS):
-        if bool(r.get("tiebreaker", False)):
-            return idx
-    return None
 
 def ensure_state_for_current_question() -> QKey:
     rid: QKey = (st.session_state.round_index, st.session_state.q_in_round)
@@ -911,7 +907,6 @@ def start_game(num_teams: int):
     st.session_state.finished = False
     st.session_state.started = True
     st.session_state.screen = "round_intro"
-    st.session_state.tiebreaker_used = False
 
 def go_prev():
     if st.session_state.screen == "question":
@@ -940,38 +935,23 @@ def go_next():
         st.session_state.q_in_round += 1
         return
 
-    # end of round (NORMAL progression skips tiebreaker)
-    cur = st.session_state.round_index
-    last_normal = last_normal_round_index()
-
-    # If we finished the last NORMAL round, decide tie -> tiebreaker or results
-    if cur == last_normal:
-        tb_idx = find_tiebreaker_round_index()
-        if tb_idx is not None and top_is_tied():
-            st.session_state.round_index = tb_idx
-            st.session_state.q_in_round = 0
-            st.session_state.screen = "round_intro"
-            return
-
-        st.session_state.finished = True
-        st.session_state.screen = "results_wait"
-        return
-
-    # Otherwise, go to the next NORMAL round (skip any tiebreaker rounds)
-    nxt = next_normal_round_index(cur)
-    if nxt is not None:
-        st.session_state.round_index = nxt
+    if st.session_state.round_index < len(ROUNDS) - 1:
+        st.session_state.round_index += 1
         st.session_state.q_in_round = 0
         st.session_state.screen = "round_intro"
         return
 
-    # Fallback (shouldn't happen)
     st.session_state.finished = True
     st.session_state.screen = "results_wait"
 
 def go_home():
     for k, v in defaults.items():
         st.session_state[k] = v
+
+if st.session_state.get("_questions_fp") != QUESTIONS_FP:
+    if st.session_state.get("started") or st.session_state.get("finished"):
+        go_home()
+    st.session_state["_questions_fp"] = QUESTIONS_FP
 
 def assign_team(ans_idx: int, team_idx: Optional[int]):
     rid = ensure_state_for_current_question()
